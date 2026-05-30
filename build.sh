@@ -12,8 +12,8 @@ Info "Welcome to WineBuilder!"
 mkdir -p {ccache,output,sources}
 
 Info "Pulling Docker image..."
-docker pull nellokudo/wine-builder:steamrt3-190426 || { echo "docker pull failed" && exit 1; }
-docker tag nellokudo/wine-builder:steamrt3-190426 wine-builder:latest
+docker pull nellokudo/wine-builder:steamrt4-190426 || { echo "docker pull failed" && exit 1; }
+docker tag nellokudo/wine-builder:steamrt4-190426 wine-builder:latest
 
 # Or build the image locally from the Dockerfile
 # docker buildx build --progress=plain -t wine-builder . || { echo "docker build failed" && exit; }

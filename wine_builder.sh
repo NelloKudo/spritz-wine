@@ -24,19 +24,22 @@ _configuration() {
     USE_TKG="${USE_TKG:-false}"
 
     # Toggle to enable/disable Wine-CachyOS.
-    USE_CACHY="${USE_CACHY:-true}"
+    USE_CACHY="${USE_CACHY:-false}"
 
     # Toggle to enable/disable Wine-Valve.
     USE_VALVE="${USE_VALVE:-false}"
 
+    # Toggle to enable/disable wine-dwproton
+    USE_DWPROTON="${USE_DWPROTON:-true}"
+
     # Set your custom build name here:
-    BUILD_NAME="${BUILD_NAME:-spritz-wine-cachyos}"
+    BUILD_NAME="${BUILD_NAME:-wine-dwproton}"
 
     # Wine version settings
     WINE_VERSION=''
     STAGING_VERSION=''
     WINE_BRANCH="${WINE_BRANCH:-}"
-    RELEASE_VERSION='11'
+    RELEASE_VERSION='3'
     PATCHSET=''
 
     # Build configuration
@@ -58,9 +61,10 @@ _configuration() {
     WINE_TKG_URL="https://github.com/Kron4ek/wine-tkg"
     WINE_CACHY_URL="https://github.com/CachyOS/wine-cachyos"
     WINE_VALVE_URL="https://github.com/ValveSoftware/wine"
+    WINE_DWPROTON_URL="https://dawn.wine/dawn-winery/wine-dwproton"
 
-    # tkg/cachy/valve settings
-    for variant in tkg cachy valve; do
+    # tkg/cachy/valve/dwproton settings
+    for variant in tkg cachy valve dwproton; do
         use_flag="USE_${variant^^}"
         url_var="WINE_${variant^^}_URL"
 
@@ -121,8 +125,15 @@ _custompatcher() {
     for patch in "${patchlist[@]}"; do
         [ -f "${patch}" ] || continue
         Info "Applying patch: $(basename "${patch}")"
-        patch -Np1 -i "${patch}" &>>"${WINE_ROOT}/patches.log" || \
+        if patch --dry-run -Np1 -i "${patch}" &>>"${WINE_ROOT}/patches.log"; then
+            patch -Np1 -i "${patch}" &>>"${WINE_ROOT}/patches.log" || \
+                Error "Failed to apply patch: ${patch}"
+        else
+            Info "patch could not apply $(basename "${patch}"), trying git apply"
+            git apply --binary --index --whitespace=warn "${patch}" &>>"${WINE_ROOT}/patches.log" || \
+                git apply --binary --whitespace=warn "${patch}" &>>"${WINE_ROOT}/patches.log" || \
             Error "Failed to apply patch: ${patch}"
+        fi
     done
 
     ## Clean up .orig files if patches succeeded
@@ -160,6 +171,8 @@ build_wine() {
         export UNWIND_LIBS="-L/usr/local/lib/ -static-libgcc -l:libunwind.a -l:liblzma.a"
     fi
 
+    _setup_wayland_pkg_config_flags
+
     # Configure and build 64-bit
     "${BUILD_DIR}/wine/configure" "${WINE_BUILD_OPTIONS[@]}" "${WINE_64_BUILD_OPTIONS[@]}"
     make -j$(($(nproc) + 1))
@@ -171,6 +184,8 @@ build_wine() {
         export PKG_CONFIG_LIBDIR="/usr/local/i386/lib/i386-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib/i386-linux-gnu/pkgconfig:/usr/lib/pkgconfig:/usr/share/pkgconfig"
         export PKG_CONFIG_PATH="${PKG_CONFIG_LIBDIR}"
         export CROSSCC="${CROSSCC_X32}"
+
+        _setup_wayland_pkg_config_flags
 
         # export I386_LIBS="-latomic" required for older fsync
 
@@ -184,6 +199,28 @@ build_wine() {
     fi
 
     unset SOURCE_DATE_EPOCH
+}
+
+_static_pkg_config_libs() {
+    pkg-config --static --libs "$1" | sed \
+        -e 's|-l\([^ ]*\)|-l:lib\1.a|g' \
+        -e 's|-l:libm\.a|-lm|g' \
+        -e 's|-l:libc\.a|-lc|g' \
+        -e 's|-l:libpthread\.a|-lpthread|g'
+}
+
+_setup_wayland_pkg_config_flags() {
+    XKBCOMMON_CFLAGS="$(pkg-config --static --cflags xkbcommon)"
+    XKBCOMMON_LIBS="$(_static_pkg_config_libs xkbcommon)"
+    export XKBCOMMON_CFLAGS XKBCOMMON_LIBS
+
+    LIBXML2_CFLAGS="$(pkg-config --static --cflags libxml-2.0)"
+    LIBXML2_LIBS="$(_static_pkg_config_libs libxml-2.0)"
+    export LIBXML2_CFLAGS LIBXML2_LIBS
+
+    XKBREGISTRY_CFLAGS="$(pkg-config --static --cflags xkbregistry)"
+    XKBREGISTRY_LIBS="$(_static_pkg_config_libs xkbregistry) ${LIBXML2_LIBS}"
+    export XKBREGISTRY_CFLAGS XKBREGISTRY_LIBS
 }
 
 package_wine() {
@@ -367,7 +404,7 @@ compiler_setup() {
     export CPPFLAGS="-D_GNU_SOURCE -D_TIME_BITS=64 -D_FILE_OFFSET_BITS=64 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0 -DNDEBUG -D_NDEBUG"
     _GCC_FLAGS="${_common_cflags} ${_native_common_cflags} ${CPPFLAGS}"
     _CROSS_FLAGS="${_common_cflags} ${CPPFLAGS}"
-    _LD_FLAGS="${_common_cflags} ${_native_common_cflags} ${CPPFLAGS} -lrt -Wl,-O1,--sort-common,--as-needed"
+    _LD_FLAGS="${_common_cflags} ${_native_common_cflags} ${CPPFLAGS} -Wl,-O1,--sort-common,--as-needed -L/usr/local/x86_64/lib/x86_64-linux-gnu -L/usr/local/lib"
     _CROSS_LD_FLAGS="${_common_cflags} ${CPPFLAGS} -Wl,-O1,--sort-common,--as-needed,--file-alignment=4096"
 
     # Compiler and linker flags
@@ -464,10 +501,11 @@ main() {
     # Change source name if the WINE_URL isn't the default or fallback one
     if [[ "$WINE_URL" != "https://github.com/wine-mirror/wine.git" && "$WINE_URL" != "$WINE_FALLBACK_URL" ]]; then
         case "$WINE_URL" in
-            "$WINE_TKG_URL")    SOURCE_NAME="wine-tkg" ;;
-            "$WINE_CACHY_URL")  SOURCE_NAME="wine-cachy" ;;
-            "$WINE_VALVE_URL")  SOURCE_NAME="wine-valve" ;;
-            *)                  SOURCE_NAME="wine-custom" ;;
+            "$WINE_TKG_URL")        SOURCE_NAME="wine-tkg" ;;
+            "$WINE_CACHY_URL")      SOURCE_NAME="wine-cachy" ;;
+            "$WINE_VALVE_URL")      SOURCE_NAME="wine-valve" ;;
+            "$WINE_DWPROTON_URL")   SOURCE_NAME="wine-dwproton" ;;
+            *)                      SOURCE_NAME="wine-custom" ;;
         esac
     fi
 
@@ -551,7 +589,6 @@ main() {
     if [ "${DEBUG}" != "true" ]; then # let wine strip on install
         awk -i inplace '/STRIPPROG=/ { sub(/ %s/, " %s -s") }1' "${BUILD_DIR}/wine/tools/makedep.c"
         # shellcheck disable=SC2016
-        sed -i 's|stripcmd=$stripprog|stripcmd="$stripprog -s"|g' "${BUILD_DIR}/wine/tools/install-sh"
     fi
 
     # Initialize git for make_makefiles
@@ -575,12 +612,6 @@ main() {
         tools/make_specfiles
     }
 
-    # Only ask for non-cachy/valve builds
-    if [[ "$USE_CACHY" == "false" && "$USE_VALVE" == "false" ]]; then
-        chmod +x tools/make_makefiles
-        tools/make_makefiles
-    fi
-
     autoreconf -fiv
     # Build and package
     build_wine
@@ -598,5 +629,5 @@ main() {
 ORIGPATH="${PWD:-$(pwd)}"
 _configuration "$@"
 
-Info "Building Spritz-Wine:"
+Info "Building wine:"
 main "$@"

@@ -1,0 +1,31 @@
+From 037e5d6bd7700e198caf32a424d62d09469a7633 Mon Sep 17 00:00:00 2001
+From: NelloKudo <marshnelloosu@gmail.com>
+Date: Tue, 7 Oct 2025 13:06:25 +0200
+Subject: [PATCH 4/8] ntdll: Set WINE_ENABLE_STEAM_STUB by default for some
+ games.
+
+Fixes crashes at startup for games which check if they've been
+launched from 'steam.exe' in their code.
+---
+ dlls/ntdll/unix/loader.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/dlls/ntdll/unix/loader.c b/dlls/ntdll/unix/loader.c
+index d8465480cd1..770578d2f16 100644
+--- a/dlls/ntdll/unix/loader.c
++++ b/dlls/ntdll/unix/loader.c
+@@ -2316,6 +2316,11 @@ static void hacks_init(void)
+ {
+     const char *sgi = getenv( "SteamGameId" );
+     const char *env_str;
++
++    if (main_argc > 1 && (strstr(main_argv[1], "GenshinImpact.exe") || strstr(main_argv[1], "YuanShen.exe") 
++        || strstr(main_argv[1], "fpsunlock.exe") || strstr(main_argv[1], "ZenlessZoneZero.exe") ))
++        setenv( "WINE_ENABLE_STEAM_STUB", "1", 0 );
++
+     if ((env_str = getenv("WINE_RAM_REPORTING_BIAS")))
+     {
+         ram_reporting_bias = atoll(env_str) * 1024 * 1024;
+-- 
+2.54.0
+

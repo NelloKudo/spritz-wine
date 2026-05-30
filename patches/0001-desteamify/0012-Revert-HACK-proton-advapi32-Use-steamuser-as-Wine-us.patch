@@ -1,0 +1,66 @@
+From de2d7d76fe2b5ce98503a5588c39b2952315c1e1 Mon Sep 17 00:00:00 2001
+From: Stelios Tsampas <loathingkernel@gmail.com>
+Date: Thu, 23 Apr 2026 00:55:04 +0300
+Subject: [PATCH 12/14] Revert "HACK: proton: advapi32: Use steamuser as Wine
+ username."
+
+This reverts commit 59b20e82fd1211314e234b08901fafe10490ff94.
+---
+ dlls/advapi32/advapi.c | 34 ++++++++++++++++------------------
+ 1 file changed, 16 insertions(+), 18 deletions(-)
+
+diff --git a/dlls/advapi32/advapi.c b/dlls/advapi32/advapi.c
+index 127cec57252..2284e92b263 100644
+--- a/dlls/advapi32/advapi.c
++++ b/dlls/advapi32/advapi.c
+@@ -44,15 +44,14 @@ WINE_DEFAULT_DEBUG_CHANNEL(advapi);
+  */
+ BOOL WINAPI GetUserNameA( LPSTR name, LPDWORD size )
+ {
+-    static const char steamuserA[] = {'s','t','e','a','m','u','s','e','r',0};
+-    if(*size < ARRAY_SIZE(steamuserA)){
+-        SetLastError( ERROR_INSUFFICIENT_BUFFER );
+-        *size = ARRAY_SIZE(steamuserA);
+-        return FALSE;
+-    }
+-    memcpy(name, steamuserA, sizeof(steamuserA));
+-    *size = ARRAY_SIZE(steamuserA);
+-    return TRUE;
++    DWORD len = GetEnvironmentVariableA( "WINEUSERNAME", name, *size );
++    BOOL ret;
++
++    if (!len) return FALSE;
++    if ((ret = (len < *size))) len++;
++    else SetLastError( ERROR_INSUFFICIENT_BUFFER );
++    *size = len;
++    return ret;
+ }
+ 
+ /******************************************************************************
+@@ -60,15 +59,14 @@ BOOL WINAPI GetUserNameA( LPSTR name, LPDWORD size )
+  */
+ BOOL WINAPI GetUserNameW( LPWSTR name, LPDWORD size )
+ {
+-    static const WCHAR steamuserW[] = {'s','t','e','a','m','u','s','e','r',0};
+-    if(*size < ARRAY_SIZE(steamuserW)){
+-        SetLastError( ERROR_INSUFFICIENT_BUFFER );
+-        *size = ARRAY_SIZE(steamuserW);
+-        return FALSE;
+-    }
+-    memcpy(name, steamuserW, sizeof(steamuserW));
+-    *size = ARRAY_SIZE(steamuserW);
+-    return TRUE;
++    DWORD len = GetEnvironmentVariableW( L"WINEUSERNAME", name, *size );
++    BOOL ret;
++
++    if (!len) return FALSE;
++    if ((ret = (len < *size))) len++;
++    else SetLastError( ERROR_INSUFFICIENT_BUFFER );
++    *size = len;
++    return ret;
+ }
+ 
+ /******************************************************************************
+-- 
+2.54.0
+

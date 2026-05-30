@@ -1,0 +1,67 @@
+From 824fc59f4d58e36b90be1b8d4109c93d58e9659b Mon Sep 17 00:00:00 2001
+From: Stelios Tsampas <loathingkernel@gmail.com>
+Date: Thu, 23 Apr 2026 00:51:34 +0300
+Subject: [PATCH 07/14] Revert "HACK: winedbg: When crash dialog is not shown,
+ dump crash info to stderr"
+
+This reverts commit 12e7d48882a3b61db6432fe393a8972157207e51.
+---
+ programs/winedbg/debugger.h   | 1 -
+ programs/winedbg/tgt_active.c | 3 ---
+ programs/winedbg/winedbg.c    | 7 -------
+ 3 files changed, 11 deletions(-)
+
+diff --git a/programs/winedbg/debugger.h b/programs/winedbg/debugger.h
+index ae181a78196..45a91e2a6f5 100644
+--- a/programs/winedbg/debugger.h
++++ b/programs/winedbg/debugger.h
+@@ -311,7 +311,6 @@ extern	DWORD	                dbg_curr_tid;
+ extern  dbg_ctx_t               dbg_context;
+ extern  BOOL                    dbg_interactiveP;
+ extern  HANDLE                  dbg_houtput;
+-extern  BOOL                    dbg_use_wine_dbg_output;
+ 
+ struct dbg_internal_var
+ {
+diff --git a/programs/winedbg/tgt_active.c b/programs/winedbg/tgt_active.c
+index 9f36c907d50..dba595b5f30 100644
+--- a/programs/winedbg/tgt_active.c
++++ b/programs/winedbg/tgt_active.c
+@@ -917,9 +917,6 @@ enum dbg_start dbg_active_auto(int argc, char* argv[])
+         if (event) thread = display_crash_details( event );
+         if (thread) dbg_houtput = output = create_temp_file();
+         break;
+-    case TRUE:
+-        dbg_use_wine_dbg_output = TRUE;
+-        break;
+     }
+ 
+     input = parser_generate_command_file("echo Modules:", "info share",
+diff --git a/programs/winedbg/winedbg.c b/programs/winedbg/winedbg.c
+index 40ceae48937..c7f14e8238f 100644
+--- a/programs/winedbg/winedbg.c
++++ b/programs/winedbg/winedbg.c
+@@ -82,7 +82,6 @@ DWORD	                dbg_curr_pid = 0;
+ dbg_ctx_t               dbg_context;
+ BOOL    	        dbg_interactiveP = FALSE;
+ HANDLE                  dbg_houtput = 0;
+-BOOL                    dbg_use_wine_dbg_output = FALSE;
+ 
+ static struct list      dbg_process_list = LIST_INIT(dbg_process_list);
+ 
+@@ -95,12 +94,6 @@ static void dbg_outputA(const char* buffer, int len)
+ 
+     DWORD w, i;
+ 
+-    if (dbg_use_wine_dbg_output)
+-    {
+-        __wine_dbg_output(buffer);
+-        return;
+-    }
+-
+     while (len > 0)
+     {
+         unsigned int count = min( len, sizeof(line_buff) - line_pos );
+-- 
+2.54.0
+

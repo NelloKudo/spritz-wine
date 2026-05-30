@@ -1,0 +1,62 @@
+From ceb4ce9abdb3f3e72a51017b7a694dc61d97bbad Mon Sep 17 00:00:00 2001
+From: Stelios Tsampas <loathingkernel@gmail.com>
+Date: Thu, 23 Apr 2026 00:51:39 +0300
+Subject: [PATCH 08/14] Revert "HACK: dxdiag: Dump to stdout if no filename is
+ given"
+
+This reverts commit 66e13e61a9728a552f068a8958d88fd4820cd31d.
+---
+ programs/dxdiag/main.c   |  8 +-------
+ programs/dxdiag/output.c | 10 +++-------
+ 2 files changed, 4 insertions(+), 14 deletions(-)
+
+diff --git a/programs/dxdiag/main.c b/programs/dxdiag/main.c
+index 47909dcf2c6..b6ea5306d06 100644
+--- a/programs/dxdiag/main.c
++++ b/programs/dxdiag/main.c
+@@ -72,13 +72,7 @@ static BOOL process_file_name(const WCHAR *cmdline, enum output_type output_type
+         endptr = cmdline + lstrlenW(cmdline);
+ 
+     len = endptr - cmdline;
+-    if (len == 0)
+-    {
+-        *filename = 0;
+-        return TRUE;
+-    }
+-
+-    if (len >= filename_len)
++    if (len == 0 || len >= filename_len)
+         return FALSE;
+ 
+     memcpy(filename, cmdline, len * sizeof(WCHAR));
+diff --git a/programs/dxdiag/output.c b/programs/dxdiag/output.c
+index 63d091395b0..a8eb733ba4b 100644
+--- a/programs/dxdiag/output.c
++++ b/programs/dxdiag/output.c
+@@ -149,12 +149,8 @@ static BOOL output_text_information(struct dxdiag_information *dxdiag_info, cons
+ 
+     fill_system_text_output_table(dxdiag_info, output_table[0].fields);
+ 
+-    if (filename && *filename)
+-        hFile = CreateFileW(filename, GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE,
+-                            NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+-    else
+-        hFile = GetStdHandle(STD_OUTPUT_HANDLE);
+-
++    hFile = CreateFileW(filename, GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE,
++                        NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+     if (hFile == INVALID_HANDLE_VALUE)
+     {
+         WINE_ERR("File creation failed, last error %lu\n", GetLastError());
+@@ -211,7 +207,7 @@ static HRESULT save_xml_document(IXMLDOMDocument *xmldoc, const WCHAR *filename)
+     VARIANT destVar;
+     HRESULT hr;
+ 
+-    if (!bstr || !filename || !*filename)
++    if (!bstr)
+         return E_OUTOFMEMORY;
+ 
+     V_VT(&destVar) = VT_BSTR;
+-- 
+2.54.0
+

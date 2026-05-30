@@ -1,9 +1,9 @@
-name: Spritz-Wine-CachyOS
+name: wine-dwproton
 on:
   workflow_dispatch:
   push:
     tags:
-      - 'wine-cachyos-aagl-*'
+      - 'wine-dwproton-*'
 
 jobs:
   build:
@@ -15,18 +15,18 @@ jobs:
 
     name: Build Wine (${{ matrix.build_type }})
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Restore ccache
         id: ccache-restore
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: ./ccache
-          key: ccache-cachyos-${{ matrix.build_type }}-${{ github.run_id }}
+          key: ccache-wine-dwproton-${{ matrix.build_type }}-${{ github.run_id }}
           restore-keys: |
-            ccache-cachyos-${{ matrix.build_type }}-
+            ccache-wine-dwproton-${{ matrix.build_type }}-
 
-      - uses: docker/setup-buildx-action@v3.10.0
+      - uses: docker/setup-buildx-action@v4
         with:
           driver: docker
 
@@ -37,15 +37,15 @@ jobs:
 
       - name: Save ccache
         if: always()
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: ./ccache
           key: ${{ steps.ccache-restore.outputs.cache-primary-key }}
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
-          name: spritz-wine-cachyos-${{ matrix.build_type }}
+          name: wine-dwproton-${{ matrix.build_type }}
           path: ./*.tar.xz
 
   release:
@@ -54,21 +54,21 @@ jobs:
     if: github.ref_type == 'tag'
     steps:
       - name: Download release artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
-          name: spritz-wine-cachyos-release
+          name: wine-dwproton-release
           path: ./artifacts/
 
       - name: Extract version from tag
         id: extract_version
         run: |
           TAG="${{ github.ref_name }}"
-          VERSION=$(echo "$TAG" | sed -n 's/^wine-cachyos-aagl-v\([0-9]\+\.[0-9]\+-[0-9]\+\)$/\1/p')
+          VERSION=$(echo "$TAG" | sed -n 's/^wine-dwproton-v\?\([0-9]\+\.[0-9]\+-[0-9]\+\)$/\1/p')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2.2.1
+        uses: softprops/action-gh-release@v3
         with:
           files: ./artifacts/*.tar.xz
-          name: "Spritz-Wine-CachyOS ${{ steps.extract_version.outputs.version }}"
+          name: "wine-dwproton ${{ steps.extract_version.outputs.version }}"
           make_latest: true

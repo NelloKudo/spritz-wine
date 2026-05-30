@@ -15,18 +15,18 @@ jobs:
             
     name: Build Wine (${{ matrix.build_type }})
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Restore ccache
         id: ccache-restore
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: ./ccache
           key: ccache-${{ matrix.build_type }}-${{ github.run_id }}
           restore-keys: |
             ccache-${{ matrix.build_type }}-
 
-      - uses: docker/setup-buildx-action@v3.10.0
+      - uses: docker/setup-buildx-action@v4
         with:
           driver: docker
 
@@ -37,13 +37,13 @@ jobs:
 
       - name: Save ccache
         if: always()
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: ./ccache
           key: ${{ steps.ccache-restore.outputs.cache-primary-key }}
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: spritz-wine-${{ matrix.build_type }}
           path: ./*.tar.xz
@@ -54,7 +54,7 @@ jobs:
     if: github.ref_type == 'tag'
     steps:
       - name: Download release artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: spritz-wine-release
           path: ./artifacts/
@@ -67,7 +67,7 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2.2.1
+        uses: softprops/action-gh-release@v3
         with:
           files: ./artifacts/*.tar.xz
           name: "Spritz-Wine-TkG-AAGL-${{ steps.extract_version.outputs.version }}"

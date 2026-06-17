@@ -1,2 +1,5 @@
 output/
 sources/
+ccache/
+*.tar.xz
+*.tar.zst

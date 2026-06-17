@@ -304,28 +304,15 @@ build_setup() {
         --prefix="${BUILD_DIR}/${BUILD_OUT_TMP_DIR}"
         --disable-tests
         --disable-winemenubuilder
-        --disable-win16
+        --enable-build-id
         --with-x
         --with-gstreamer
         --with-ffmpeg
         --with-wayland
+        --with-libpcap
         --without-oss
-        --without-coreaudio
-        --without-cups
-        --without-sane
-        --without-gphoto
-        --without-pcsclite
-        --without-pcap
-        --without-capi
-        --without-v4l2
-        --without-netapi
-        --disable-msv1_0
         --disable-lsteamclient
     )
-
-    if [ "${DEBUG}" = "true" ]; then
-        WINE_BUILD_OPTIONS+=(--enable-build-id)
-    fi
 
     WINE_64_BUILD_OPTIONS=(
         --libdir="${BUILD_DIR}/${BUILD_OUT_TMP_DIR}/lib"
@@ -349,6 +336,7 @@ build_setup() {
 ## ------------------------------------------------------------
 
 compiler_setup() {
+    # flags are based on proton's build system (Makefile.in / make/rules-common.mk)
     export PKG_CONFIG="pkg-config"
 
     # Compiler flags
@@ -388,38 +376,50 @@ compiler_setup() {
         export CROSSCXX_X64="ccache x86_64-w64-mingw32-g++"
     fi
 
-    # Flags setup
-    if [ "$DEBUG" != "true" ]; then
-        _common_cflags="-march=nocona -mtune=core-avx2 -pipe -O2 -fno-strict-aliasing -fwrapv -mfpmath=sse \
-                        -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -Wno-error=int-conversion -w"
-        [ "$USE_LLVM_MINGW" = "true" ] && _common_cflags="${_common_cflags} -ffunction-sections -fdata-sections -Wl,--gc-sections"
-    else
-        _common_cflags="-march=nocona -mtune=core-avx2 -pipe -O2 -ggdb -gdwarf-4 -fvar-tracking-assignments -fno-strict-aliasing -fwrapv -mfpmath=sse \
-                        -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer -fdata-sections -ffunction-sections \
-                        -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -Wno-error=int-conversion"
+    _base_cflags="-O2 -march=nocona -mtune=core-avx2 -pipe -mfpmath=sse \
+                  -fno-strict-aliasing -fwrapv \
+                  -ffunction-sections -fdata-sections -fno-omit-frame-pointer \
+                  -ffile-prefix-map=${BUILD_DIR}/wine=."
+
+    _x86_64_arch_flags="-mcmodel=small -mno-avx -mno-avx2 -mno-avx512f"
+    _i386_arch_flags="-mstackrealign -mno-avx -mno-avx2 -mno-avx512f"
+
+    # gcc-only opts
+    if [ "$USE_LLVM_MINGW" != "true" ]; then
+        _x86_64_arch_flags+=" -fvect-cost-model=cheap -fno-semantic-interposition -fipa-pta"
+        _i386_arch_flags+=" -fvect-cost-model=cheap -fno-semantic-interposition -fipa-pta"
     fi
 
-    _native_common_cflags="-static-libgcc"
+    _wine_warn="-Wno-discarded-qualifiers -Wno-stringop-overflow -Wno-incompatible-pointer-types \
+                -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration \
+                -Wno-error=int-conversion"
 
-    export CPPFLAGS="-D_GNU_SOURCE -D_TIME_BITS=64 -D_FILE_OFFSET_BITS=64 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0 -DNDEBUG -D_NDEBUG"
-    _GCC_FLAGS="${_common_cflags} ${_native_common_cflags} ${CPPFLAGS}"
-    _CROSS_FLAGS="${_common_cflags} ${CPPFLAGS}"
-    _LD_FLAGS="${_common_cflags} ${_native_common_cflags} ${CPPFLAGS} -Wl,-O1,--sort-common,--as-needed -L/usr/local/x86_64/lib/x86_64-linux-gnu -L/usr/local/lib"
-    _CROSS_LD_FLAGS="${_common_cflags} ${CPPFLAGS} -Wl,-O1,--sort-common,--as-needed,--file-alignment=4096"
+    if [ "$DEBUG" = "true" ]; then
+        _debug_flags="-ggdb -gdwarf-4 -fvar-tracking-assignments -mno-omit-leaf-frame-pointer"
+    else
+        _debug_flags=""
+    fi
 
-    # Compiler and linker flags
+    _native_extra="-static-libgcc -Wl,--exclude-libs=libstdc++.a"
+    _GCC_FLAGS="${_base_cflags} ${_x86_64_arch_flags} ${_native_extra} ${_wine_warn} ${_debug_flags}"
+    _LD_FLAGS="${_base_cflags} ${_x86_64_arch_flags} ${_native_extra} -L/usr/local/x86_64/lib/x86_64-linux-gnu -L/usr/local/lib"
+
+    _CROSS_X64_FLAGS="${_base_cflags} ${_x86_64_arch_flags} ${_wine_warn} ${_debug_flags}"
+    _CROSS_I386_FLAGS="${_base_cflags} ${_i386_arch_flags} ${_wine_warn} ${_debug_flags}"
+    _CROSS_LD_FLAGS="${_base_cflags} ${_x86_64_arch_flags}"
+
     export CFLAGS="${_GCC_FLAGS}"
     export CXXFLAGS="${_GCC_FLAGS}"
     export LDFLAGS="${_LD_FLAGS}"
 
-    export CROSSCFLAGS="${_CROSS_FLAGS}"
-    export CROSSCXXFLAGS="${_CROSS_FLAGS}"
+    export CROSSCFLAGS="${_CROSS_X64_FLAGS}"
+    export CROSSCXXFLAGS="${_CROSS_X64_FLAGS}"
     export CROSSLDFLAGS="${_CROSS_LD_FLAGS}"
 
     export i386_CC="${CROSSCC_X32}"
     export x86_64_CC="${CROSSCC_X64}"
-    export i386_CFLAGS="${CROSSCFLAGS}"
-    export x86_64_CFLAGS="${CROSSCFLAGS}"
+    export i386_CFLAGS="${_CROSS_I386_FLAGS}"
+    export x86_64_CFLAGS="${_CROSS_X64_FLAGS}"
 }
 
 ## ------------------------------------------------------------

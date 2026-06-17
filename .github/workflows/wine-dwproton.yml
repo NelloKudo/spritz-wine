@@ -71,4 +71,4 @@ jobs:
         with:
           files: ./artifacts/*.tar.xz
           name: "wine-dwproton ${{ steps.extract_version.outputs.version }}"
-          make_latest: true
+          make_latest: false

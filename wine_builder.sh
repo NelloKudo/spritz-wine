@@ -62,6 +62,7 @@ _configuration() {
     WINE_CACHY_URL="https://github.com/CachyOS/wine-cachyos"
     WINE_VALVE_URL="https://github.com/ValveSoftware/wine"
     WINE_DWPROTON_URL="https://dawn.wine/dawn-winery/wine-dwproton"
+    WINE_DWPROTON_FALLBACK_URL="https://github.com/NelloKudo/wine-dwproton"
 
     # tkg/cachy/valve/dwproton settings
     for variant in tkg cachy valve dwproton; do
@@ -507,6 +508,14 @@ main() {
             "$WINE_DWPROTON_URL")   SOURCE_NAME="wine-dwproton" ;;
             *)                      SOURCE_NAME="wine-custom" ;;
         esac
+    fi
+
+    # Fall back to GitHub mirror if dawn.wine is unreachable
+    if [ "${WINE_URL}" = "${WINE_DWPROTON_URL}" ]; then
+        if ! git ls-remote "${WINE_DWPROTON_URL}" HEAD &>/dev/null; then
+            Info "dawn.wine unreachable, falling back to GitHub mirror..."
+            WINE_URL="${WINE_DWPROTON_FALLBACK_URL}"
+        fi
     fi
 
     # Initialize/update Wine source

@@ -186,6 +186,23 @@ build_wine() {
         export PKG_CONFIG_PATH="${PKG_CONFIG_LIBDIR}"
         export CROSSCC="${CROSSCC_X32}"
 
+        # proton i386_cflags: same base as x86_64 but no -mcmodel=small
+        _i386_native_flags="-O2 -march=nocona -mtune=core-avx2 -pipe -mfpmath=sse \
+                            -fno-strict-aliasing -fwrapv \
+                            -ffunction-sections -fdata-sections -fno-omit-frame-pointer \
+                            -ffile-prefix-map=${BUILD_DIR}/wine=. \
+                            -mstackrealign -mno-avx -mno-avx2 -mno-avx512f \
+                            -static-libgcc -Wl,--exclude-libs=libstdc++.a \
+                            -Wno-discarded-qualifiers -Wno-stringop-overflow \
+                            -Wno-incompatible-pointer-types -Wno-error=incompatible-pointer-types \
+                            -Wno-error=implicit-function-declaration -Wno-error=int-conversion"
+        if [ "$USE_LLVM_MINGW" != "true" ]; then
+            _i386_native_flags+=" -fvect-cost-model=cheap -fno-semantic-interposition -fipa-pta"
+        fi
+        export CFLAGS="${_i386_native_flags}"
+        export CXXFLAGS="${_i386_native_flags}"
+        export LDFLAGS="-static-libgcc -Wl,--exclude-libs=libstdc++.a -L/usr/local/i386/lib/i386-linux-gnu -L/usr/local/lib"
+
         _setup_wayland_pkg_config_flags
 
         # export I386_LIBS="-latomic" required for older fsync

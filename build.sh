@@ -33,11 +33,12 @@ done
 chmod +x wine_builder.sh
 docker run --rm \
     --name wine-builder \
+    --security-opt label=disable \
     "${WB_ENV_ARGS[@]}" \
     --mount type=bind,source="$(pwd)"/wine_builder.sh,target=/usr/local/bin/wine_builder.sh \
+    --mount type=bind,source="$(pwd)"/output,target=/wine \
     --mount type=bind,source="$(pwd)"/assets,target=/wine/assets \
     --mount type=bind,source="$(pwd)"/patches,target=/wine/custompatches \
-    --mount type=bind,source="$(pwd)"/output,target=/wine \
     --mount type=bind,source="$(pwd)"/ccache,target=/root/.ccache \
     --mount type=bind,source="$(pwd)"/sources,target=/wine/sources \
     --entrypoint "/usr/local/bin/wine_builder.sh" \

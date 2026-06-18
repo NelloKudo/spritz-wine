@@ -1,4 +1,4 @@
-From c637d737567168451ba9be533c10346c0b5f4ab0 Mon Sep 17 00:00:00 2001
+From 78fa2b05a81fa7fc1d6d313bedbb284c93477077 Mon Sep 17 00:00:00 2001
 From: Stelios Tsampas <loathingkernel@gmail.com>
 Date: Mon, 20 Apr 2026 10:28:09 +0300
 Subject: [PATCH 01/14] Revert "dwrite: Use fonts distributed with Proton as

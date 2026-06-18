@@ -1,4 +1,4 @@
-From 278af13202e3a3a798520e74534dd4994e489ddc Mon Sep 17 00:00:00 2001
+From 90acde398acf8a691cdcb9cffcadd0affccb7b59 Mon Sep 17 00:00:00 2001
 From: Stelios Tsampas <loathingkernel@gmail.com>
 Date: Thu, 23 Apr 2026 00:55:09 +0300
 Subject: [PATCH 13/14] Revert "HACK: steam: wine.inf: Associate the steam
@@ -10,7 +10,7 @@ This reverts commit eeb10d71bea438089b62906f0aaa40be1a05dc97.
  1 file changed, 1 deletion(-)
 
 diff --git a/loader/wine.inf.in b/loader/wine.inf.in
-index 0e79cdf0a66..ea5f04d3219 100644
+index 4e39507f9d6..f010afe2c91 100644
 --- a/loader/wine.inf.in
 +++ b/loader/wine.inf.in
 @@ -313,7 +313,6 @@ HKCR,ftp\shell\open\command,,2,"""%11%\winebrowser.exe"" ""%1"""

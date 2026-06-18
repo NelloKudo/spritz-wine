@@ -39,7 +39,7 @@ _configuration() {
     WINE_VERSION=''
     STAGING_VERSION=''
     WINE_BRANCH="${WINE_BRANCH:-}"
-    RELEASE_VERSION='3'
+    RELEASE_VERSION='4'
     PATCHSET=''
 
     # Build configuration

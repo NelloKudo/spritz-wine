@@ -1,4 +1,4 @@
-From 0152c193d93f94d3e4ec95527c26e82b17fe8b4b Mon Sep 17 00:00:00 2001
+From c7ded9f576b550cfadda1a5878ce393d8cc8dc74 Mon Sep 17 00:00:00 2001
 From: Stelios Tsampas <loathingkernel@gmail.com>
 Date: Thu, 23 Apr 2026 00:54:55 +0300
 Subject: [PATCH 11/14] Revert "HACK: proton: shell32: Never create links to

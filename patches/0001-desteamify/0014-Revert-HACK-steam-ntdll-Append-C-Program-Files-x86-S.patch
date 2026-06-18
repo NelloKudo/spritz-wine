@@ -1,4 +1,4 @@
-From 6e0ce977a45247f3ed37fc506f1834205f3c0d5f Mon Sep 17 00:00:00 2001
+From 6fd20c303887f826c478a65ccbed6b1c278f4277 Mon Sep 17 00:00:00 2001
 From: Stelios Tsampas <loathingkernel@gmail.com>
 Date: Thu, 23 Apr 2026 00:55:12 +0300
 Subject: [PATCH 14/14] Revert "HACK: steam: ntdll: Append C:/Program Files

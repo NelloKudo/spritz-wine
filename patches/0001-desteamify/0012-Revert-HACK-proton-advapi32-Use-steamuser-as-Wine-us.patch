@@ -1,4 +1,4 @@
-From de2d7d76fe2b5ce98503a5588c39b2952315c1e1 Mon Sep 17 00:00:00 2001
+From bb2533cdc16b6498f35544da39f77d92709f0d35 Mon Sep 17 00:00:00 2001
 From: Stelios Tsampas <loathingkernel@gmail.com>
 Date: Thu, 23 Apr 2026 00:55:04 +0300
 Subject: [PATCH 12/14] Revert "HACK: proton: advapi32: Use steamuser as Wine

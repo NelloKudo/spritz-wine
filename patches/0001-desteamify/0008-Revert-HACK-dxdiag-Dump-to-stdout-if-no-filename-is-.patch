@@ -1,4 +1,4 @@
-From ceb4ce9abdb3f3e72a51017b7a694dc61d97bbad Mon Sep 17 00:00:00 2001
+From f47a55befbe56ba6dcfb7b3ce6ec7914bca9e9f7 Mon Sep 17 00:00:00 2001
 From: Stelios Tsampas <loathingkernel@gmail.com>
 Date: Thu, 23 Apr 2026 00:51:39 +0300
 Subject: [PATCH 08/14] Revert "HACK: dxdiag: Dump to stdout if no filename is

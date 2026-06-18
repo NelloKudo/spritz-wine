@@ -1,4 +1,4 @@
-From 2452a3736f4c498e99fc41f404967023df965059 Mon Sep 17 00:00:00 2001
+From b8c48cc934f769beef7baff755730894a4a55a0a Mon Sep 17 00:00:00 2001
 From: Stelios Tsampas <loathingkernel@gmail.com>
 Date: Mon, 20 Apr 2026 10:34:38 +0300
 Subject: [PATCH 03/14] Revert "icu: Add stub dll."
@@ -13,10 +13,10 @@ This reverts commit ae6ae2609ef932126c24dde11fbb854436874e31.
  delete mode 100644 dlls/icu/icu.spec
 
 diff --git a/configure.ac b/configure.ac
-index 166fa5f9c0c..cfae74eb4fb 100644
+index 6c04c843cf1..27fb2757b32 100644
 --- a/configure.ac
 +++ b/configure.ac
-@@ -2856,7 +2856,6 @@ WINE_CONFIG_MAKEFILE(dlls/iccvid/tests)
+@@ -2857,7 +2857,6 @@ WINE_CONFIG_MAKEFILE(dlls/iccvid/tests)
  WINE_CONFIG_MAKEFILE(dlls/icmp)
  WINE_CONFIG_MAKEFILE(dlls/icmui)
  WINE_CONFIG_MAKEFILE(dlls/icmui/tests)

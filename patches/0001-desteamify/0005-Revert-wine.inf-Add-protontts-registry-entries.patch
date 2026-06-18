@@ -1,4 +1,4 @@
-From 19e23ddd72a4fd90b305e8de52bd30e0c10c4066 Mon Sep 17 00:00:00 2001
+From 55dc70117cb6321b9a5c9bf15a8fa694fcd33030 Mon Sep 17 00:00:00 2001
 From: Stelios Tsampas <loathingkernel@gmail.com>
 Date: Wed, 22 Apr 2026 21:14:14 +0300
 Subject: [PATCH 05/14] Revert "wine.inf: Add protontts registry entries."
@@ -9,7 +9,7 @@ This reverts commit 8db22ff4fa3d2fe8547faef7984483dded6b587c.
  1 file changed, 41 deletions(-)
 
 diff --git a/loader/wine.inf.in b/loader/wine.inf.in
-index 73a10c32fc0..0e79cdf0a66 100644
+index 043d59c1447..4e39507f9d6 100644
 --- a/loader/wine.inf.in
 +++ b/loader/wine.inf.in
 @@ -68,7 +68,6 @@ AddReg=\
@@ -20,7 +20,7 @@ index 73a10c32fc0..0e79cdf0a66 100644
      OLE,\
      Printing,\
      ProtonOverrides,\
-@@ -1616,46 +1615,6 @@ HKLM,Software\Wow6432Node\Valve\Steam,"InstallPath",,"%16422%\Steam"
+@@ -1617,46 +1616,6 @@ HKLM,Software\Wow6432Node\Valve\Steam,"InstallPath",,"%16422%\Steam"
  [NVIDIANGX]
  HKLM,Software\NVIDIA Corporation\Global\NGXCore,"FullPath",,"C:\Windows\System32"
  

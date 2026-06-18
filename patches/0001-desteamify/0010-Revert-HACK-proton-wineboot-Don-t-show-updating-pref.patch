@@ -1,4 +1,4 @@
-From 8323c72778a81f723efe1bec762c624ad8be7f03 Mon Sep 17 00:00:00 2001
+From e75da3256e8c5ca4f737a952e9171ad63be1759f Mon Sep 17 00:00:00 2001
 From: Stelios Tsampas <loathingkernel@gmail.com>
 Date: Thu, 23 Apr 2026 00:54:46 +0300
 Subject: [PATCH 10/14] Revert "HACK: proton: wineboot: Don't show "updating

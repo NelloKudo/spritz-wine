@@ -1,0 +1,144 @@
+From 33c0cf3f4726ce8fd62eeed6f22d59ef7affd955 Mon Sep 17 00:00:00 2001
+From: NelloKudo <marshnelloosu@gmail.com>
+Date: Mon, 25 Aug 2025 23:25:25 +0200
+Subject: [PATCH 3/8] ntdll: Allow launching apps from steam.exe stub.
+
+Some games need to be launched from Proton's stub steam.exe to allow
+being launched on Linux and related systems: this allows doing so without
+any Proton script, but straight up from Wine.
+---
+ dlls/ntdll/unix/env.c          | 48 ++++++++++++++++++++++++++++------
+ dlls/ntdll/unix/loader.c       | 27 +++++++++++++++++++
+ dlls/ntdll/unix/unix_private.h |  1 +
+ 3 files changed, 68 insertions(+), 8 deletions(-)
+
+diff --git a/dlls/ntdll/unix/env.c b/dlls/ntdll/unix/env.c
+index e92bdb45373..c58b1dbe365 100644
+--- a/dlls/ntdll/unix/env.c
++++ b/dlls/ntdll/unix/env.c
+@@ -1924,6 +1924,24 @@ static void init_peb( RTL_USER_PROCESS_PARAMETERS *params, void *module )
+ }
+ 
+ 
++/* HACK: Check for conditions to use the Steam stub */
++static BOOL use_steam_stub()
++{
++    static volatile char cache = -1;
++    if (cache == -1)
++    {
++        const char *env = getenv("WINE_ENABLE_STEAM_STUB");
++        
++        if (env && atoi(env))
++            cache = TRUE;
++        else
++            cache = FALSE;
++    }
++
++    return cache;
++}
++
++
+ /*************************************************************************
+  *		build_initial_params
+  *
+@@ -1940,6 +1958,7 @@ static RTL_USER_PROCESS_PARAMETERS *build_initial_params( void **module )
+     WCHAR *curdir = get_initial_directory();
+     UNICODE_STRING nt_name;
+     NTSTATUS status;
++    BOOL launch_with_steam = use_steam_stub();
+ 
+     if (NtCurrentTeb64()) NtCurrentTeb64()->TlsSlots[WOW64_TLS_FILESYSREDIR] = TRUE;
+ 
+@@ -1985,18 +2004,31 @@ static RTL_USER_PROCESS_PARAMETERS *build_initial_params( void **module )
+         }
+     }
+ 
+-    if (status)  /* try launching it through start.exe */
++    /* check if we should launch from the Steam stub */
++    /* launch using the steam wrapper */
++    if (launch_with_steam)
+     {
+-        static const char *args[] = { "start.exe", "/exec" };
++        static const char *args[] = { "steam.exe" };
+         free( nt_name.Buffer );
+         if (*module) NtUnmapViewOfSection( GetCurrentProcess(), *module );
+-        load_start_exe( &nt_name, module );
+-        prepend_argv( args, 2 );
++        load_steam_exe( &nt_name, module );
++        prepend_argv( args, 1 );
+     }
+-    else
+-    {
+-        rebuild_argv();
+-        if (NtCurrentTeb64()) NtCurrentTeb64()->TlsSlots[WOW64_TLS_FILESYSREDIR] = FALSE;
++    /* or fallback to upstream behavior */
++    else {
++        if (status)  /* try launching it through start.exe */
++        {
++            static const char *args[] = { "start.exe", "/exec" };
++            free( nt_name.Buffer );
++            if (*module) NtUnmapViewOfSection( GetCurrentProcess(), *module );
++            load_start_exe( &nt_name, module );
++            prepend_argv( args, 2 );
++        }
++        else
++        {
++            rebuild_argv();
++            if (NtCurrentTeb64()) NtCurrentTeb64()->TlsSlots[WOW64_TLS_FILESYSREDIR] = FALSE;
++        }
+     }
+ 
+     main_wargv = build_wargv( get_dos_path( nt_name.Buffer ));
+diff --git a/dlls/ntdll/unix/loader.c b/dlls/ntdll/unix/loader.c
+index 022713df20a..6aba5f7b460 100644
+--- a/dlls/ntdll/unix/loader.c
++++ b/dlls/ntdll/unix/loader.c
+@@ -1922,6 +1922,33 @@ NTSTATUS load_start_exe( UNICODE_STRING *nt_name, void **module )
+     return status;
+ }
+ 
++
++/***********************************************************************
++ *           load_steam_exe
++ *
++ * Load steam.exe as main image.
++ * Adapted from load_start_exe.
++ */
++NTSTATUS load_steam_exe( UNICODE_STRING *nt_name, void **module )
++{
++    static const WCHAR startW[] = {'s','t','e','a','m','.','e','x','e',0};
++    unsigned int status;
++    SIZE_T size;
++    WCHAR *image = malloc( sizeof("\\??\\C:\\windows\\system32\\steam.exe") * sizeof(WCHAR) );
++
++    wcscpy( image, get_machine_wow64_dir( current_machine ));
++    wcscat( image, startW );
++    init_unicode_string( nt_name, image );
++    status = find_builtin_dll( nt_name, NULL, module, &size, &main_image_info, 0, 0, current_machine, 0, FALSE, 0 );
++    if (!NT_SUCCESS(status))
++    {
++        MESSAGE( "wine: failed to load steam.exe: %x\n", status );
++        NtTerminateProcess( GetCurrentProcess(), status );
++    }
++    MESSAGE("wine: launching from steam.exe stub!\n");
++    return status;
++}
++
+ static ULONG_PTR find_ordinal_export( HMODULE module, const IMAGE_EXPORT_DIRECTORY *exports, DWORD ordinal )
+ {
+     const DWORD *functions = (const DWORD *)((BYTE *)module + exports->AddressOfFunctions);
+diff --git a/dlls/ntdll/unix/unix_private.h b/dlls/ntdll/unix/unix_private.h
+index a7abfe1a7d7..fde7deb18a5 100644
+--- a/dlls/ntdll/unix/unix_private.h
++++ b/dlls/ntdll/unix/unix_private.h
+@@ -236,6 +236,7 @@ extern NTSTATUS load_builtin( const struct pe_image_info *image_info, UNICODE_ST
+ extern BOOL is_builtin_path( const UNICODE_STRING *path, WORD *machine );
+ extern NTSTATUS load_main_exe( UNICODE_STRING *nt_name, USHORT load_machine, void **module );
+ extern NTSTATUS load_start_exe( UNICODE_STRING *nt_name, void **module );
++extern NTSTATUS load_steam_exe( UNICODE_STRING *nt_name, void **module );
+ extern ULONG_PTR redirect_arm64ec_rva( void *module, ULONG_PTR rva, const IMAGE_ARM64EC_METADATA *metadata );
+ extern void start_server( BOOL debug );
+ 
+-- 
+2.54.0
+

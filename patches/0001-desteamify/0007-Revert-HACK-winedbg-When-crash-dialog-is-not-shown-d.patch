@@ -1,4 +1,4 @@
-From 824fc59f4d58e36b90be1b8d4109c93d58e9659b Mon Sep 17 00:00:00 2001
+From cd38fca556ca3bab75ba2d908dcf0fb62f5d1052 Mon Sep 17 00:00:00 2001
 From: Stelios Tsampas <loathingkernel@gmail.com>
 Date: Thu, 23 Apr 2026 00:51:34 +0300
 Subject: [PATCH 07/14] Revert "HACK: winedbg: When crash dialog is not shown,

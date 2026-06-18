@@ -1,0 +1,46 @@
+From 8c01c402fda4e66cb3daa016a891bc37f8cad9bd Mon Sep 17 00:00:00 2001
+From: NelloKudo <marshnelloosu@gmail.com>
+Date: Sat, 30 May 2026 19:48:00 +0200
+Subject: [PATCH 1/8] loader/configure: Redirect to wine-dwproton for issues.
+
+---
+ configure.ac        | 2 +-
+ dlls/ntdll/loader.c | 6 +++---
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/configure.ac b/configure.ac
+index 27fb2757b32..18536413079 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -3849,7 +3849,7 @@ dnl Rules for generated source files
+ 
+ WINE_APPEND_RULE(
+ [dlls/ntdll/unix/version.c: dummy
+-	@version=\`(GIT_DIR=${wine_srcdir}.git git describe HEAD 2>/dev/null || echo \"wine-\$(PACKAGE_VERSION)\") | sed -n -e '\$\$s/\(.*\)/const char wine_build[[]] = \"\\1 (CachyOS)\";/p'\` && (echo \$\$version | cmp -s - \$[@]) || echo \$\$version >\$[@] || (rm -f \$[@] && exit 1)
++	@version=\`(GIT_DIR=${wine_srcdir}.git git describe HEAD 2>/dev/null || echo \"wine-\$(PACKAGE_VERSION)\") | sed -n -e '\$\$s/\(.*\)/const char wine_build[[]] = \"\\1 (dwproton)\";/p'\` && (echo \$\$version | cmp -s - \$[@]) || echo \$\$version >\$[@] || (rm -f \$[@] && exit 1)
+ programs/winetest/build.rc: dummy
+ 	@build=\"STRINGTABLE { 1 \\\"\`GIT_DIR=${wine_srcdir}.git git rev-parse HEAD 2>/dev/null\`\\\" }\" && (echo \$\$build | cmp -s - \$[@]) || echo \$\$build >\$[@] || (rm -f \$[@] && exit 1)
+ dlls/wineandroid.drv/wine-debug.apk: dlls/wineandroid.drv/build.gradle ${wine_srcdir}dlls/wineandroid.drv/AndroidManifest.xml ${wine_srcdir}dlls/wineandroid.drv/WineActivity.java ${wine_srcdir}dlls/wineandroid.drv/wine.svg
+diff --git a/dlls/ntdll/loader.c b/dlls/ntdll/loader.c
+index a55d0a525c3..98a41431314 100644
+--- a/dlls/ntdll/loader.c
++++ b/dlls/ntdll/loader.c
+@@ -4938,12 +4938,12 @@ void loader_init( CONTEXT *context, void **entry )
+         InitializeObjectAttributes( &cachyos_event_attr, &cachyos_event_string, OBJ_OPENIF, NULL, NULL );
+         if (NtCreateEvent( &cachyos_event, EVENT_ALL_ACCESS, &cachyos_event_attr, NotificationEvent, FALSE ) == STATUS_SUCCESS)
+         {
+-            FIXME_(winediag)("wine-cachyos %s is a testing version containing experimental patches.\n", wine_get_version());
+-            FIXME_(winediag)("this wine contains many experimental patches, please don't report bugs to winehq.org.\n");
++            FIXME_(winediag)("wine-dwproton %s is a testing version containing experimental patches.\n", wine_get_version());
++            FIXME_(winediag)("this wine contains many experimental patches, please only report bugs to https://dawn.wine/dawn-winery/wine-dwproton.\n");
+         }
+         else
+         {
+-            WARN_(winediag)("wine-cachyos %s is a testing version containing experimental patches.\n", wine_get_version());
++            WARN_(winediag)("wine-dwproton %s is a testing version containing experimental patches.\n", wine_get_version());
+             NtClose( cachyos_event );
+         }
+     }
+-- 
+2.54.0
+

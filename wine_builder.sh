@@ -176,22 +176,9 @@ build_wine() {
         export PKG_CONFIG_PATH="${PKG_CONFIG_LIBDIR}"
         export CROSSCC="${CROSSCC_X32}"
 
-        # proton i386_cflags: same base as x86_64 but no -mcmodel=small
-        _i386_native_flags="-O2 -march=nocona -mtune=core-avx2 -pipe -mfpmath=sse \
-                            -fno-strict-aliasing -fwrapv \
-                            -ffunction-sections -fdata-sections -fno-omit-frame-pointer \
-                            -ffile-prefix-map=${BUILD_DIR}/wine=. \
-                            -mstackrealign -mno-avx -mno-avx2 -mno-avx512f \
-                            -static-libgcc -Wl,--exclude-libs=libstdc++.a \
-                            -Wno-discarded-qualifiers -Wno-stringop-overflow \
-                            -Wno-incompatible-pointer-types -Wno-error=incompatible-pointer-types \
-                            -Wno-error=implicit-function-declaration -Wno-error=int-conversion"
-        if [ "$USE_LLVM_MINGW" != "true" ]; then
-            _i386_native_flags+=" -fvect-cost-model=cheap -fno-semantic-interposition -fipa-pta"
-        fi
-        export CFLAGS="${_i386_native_flags}"
-        export CXXFLAGS="${_i386_native_flags}"
-        export LDFLAGS="-static-libgcc -Wl,--exclude-libs=libstdc++.a -L/usr/local/i386/lib/i386-linux-gnu -L/usr/local/lib"
+        export CFLAGS="${NATIVE_X32_CFLAGS}"
+        export CXXFLAGS="${NATIVE_X32_CXXFLAGS}"
+        export LDFLAGS="${NATIVE_X32_LDFLAGS}"
 
         _setup_wayland_pkg_config_flags
 
@@ -383,50 +370,64 @@ compiler_setup() {
         export CROSSCXX_X64="ccache x86_64-w64-mingw32-g++"
     fi
 
-    _base_cflags="-O2 -march=nocona -mtune=core-avx2 -pipe -mfpmath=sse \
-                  -fno-strict-aliasing -fwrapv \
-                  -ffunction-sections -fdata-sections -fno-omit-frame-pointer \
-                  -ffile-prefix-map=${BUILD_DIR}/wine=."
+    ## flag building blocks
+    _base="-O2 -march=nocona -mtune=core-avx2 -pipe -mfpmath=sse \
+           -fno-strict-aliasing -fwrapv \
+           -ffunction-sections -fdata-sections -fno-omit-frame-pointer \
+           -ffile-prefix-map=${BUILD_DIR}/wine=."
 
-    _x86_64_arch_flags="-mcmodel=small -mno-avx -mno-avx2 -mno-avx512f"
-    _i386_arch_flags="-mstackrealign -mno-avx -mno-avx2 -mno-avx512f"
+    _arch_x64="-mno-avx -mno-avx2 -mno-avx512f"
+    _arch_x32="-mstackrealign -mno-avx -mno-avx2 -mno-avx512f"
 
     # gcc-only opts
     if [ "$USE_LLVM_MINGW" != "true" ]; then
-        _x86_64_arch_flags+=" -fvect-cost-model=cheap -fno-semantic-interposition -fipa-pta"
-        _i386_arch_flags+=" -fvect-cost-model=cheap -fno-semantic-interposition -fipa-pta"
+        _arch_x64+=" -fvect-cost-model=cheap -fno-semantic-interposition -fipa-pta"
+        _arch_x32+=" -fvect-cost-model=cheap -fno-semantic-interposition -fipa-pta"
     fi
 
-    _wine_warn="-Wno-discarded-qualifiers -Wno-stringop-overflow -Wno-incompatible-pointer-types \
-                -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration \
-                -Wno-error=int-conversion"
+    # already the native default, and it breaks configure's i386 pe probes
+    _arch_x64_pe="-mcmodel=small ${_arch_x64}"
 
-    if [ "$DEBUG" = "true" ]; then
-        _debug_flags="-ggdb -gdwarf-4 -fvar-tracking-assignments -mno-omit-leaf-frame-pointer"
-    else
-        _debug_flags=""
-    fi
+    _static="-static-libgcc -Wl,--exclude-libs=libstdc++.a"
 
-    _native_extra="-static-libgcc -Wl,--exclude-libs=libstdc++.a"
-    _GCC_FLAGS="${_base_cflags} ${_x86_64_arch_flags} ${_native_extra} ${_wine_warn} ${_debug_flags}"
-    _LD_FLAGS="${_base_cflags} ${_x86_64_arch_flags} ${_native_extra} -L/usr/local/x86_64/lib/x86_64-linux-gnu -L/usr/local/lib"
+    _warn="-Wno-stringop-overflow"
+    # c-only, cc1plus whines about these on every .cpp
+    _warn_c="-Wno-discarded-qualifiers -Wno-incompatible-pointer-types \
+             -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration \
+             -Wno-error=int-conversion"
 
-    _CROSS_X64_FLAGS="${_base_cflags} ${_x86_64_arch_flags} ${_wine_warn} ${_debug_flags}"
-    _CROSS_I386_FLAGS="${_base_cflags} ${_i386_arch_flags} ${_wine_warn} ${_debug_flags}"
-    _CROSS_LD_FLAGS="${_base_cflags} ${_x86_64_arch_flags}"
+    _debug=""
+    [ "$DEBUG" = "true" ] && \
+        _debug="-ggdb -gdwarf-4 -fvar-tracking-assignments -mno-omit-leaf-frame-pointer"
 
-    export CFLAGS="${_GCC_FLAGS}"
-    export CXXFLAGS="${_GCC_FLAGS}"
-    export LDFLAGS="${_LD_FLAGS}"
+    ## native, picked up by build_wine per pass
+    NATIVE_X64_CFLAGS="${_base} ${_arch_x64} ${_static} ${_warn} ${_warn_c} ${_debug}"
+    NATIVE_X64_CXXFLAGS="${_base} ${_arch_x64} ${_static} ${_warn} ${_debug}"
+    NATIVE_X64_LDFLAGS="${_base} ${_arch_x64} ${_static} -L/usr/local/x86_64/lib/x86_64-linux-gnu -L/usr/local/lib"
 
-    export CROSSCFLAGS="${_CROSS_X64_FLAGS}"
-    export CROSSCXXFLAGS="${_CROSS_X64_FLAGS}"
-    export CROSSLDFLAGS="${_CROSS_LD_FLAGS}"
+    NATIVE_X32_CFLAGS="${_base} ${_arch_x32} ${_static} ${_warn} ${_warn_c} ${_debug}"
+    NATIVE_X32_CXXFLAGS="${_base} ${_arch_x32} ${_static} ${_warn} ${_debug}"
+    NATIVE_X32_LDFLAGS="${_static} -L/usr/local/i386/lib/i386-linux-gnu -L/usr/local/lib"
 
+    export CFLAGS="${NATIVE_X64_CFLAGS}"
+    export CXXFLAGS="${NATIVE_X64_CXXFLAGS}"
+    export LDFLAGS="${NATIVE_X64_LDFLAGS}"
+
+    ## pe cross, per arch
     export i386_CC="${CROSSCC_X32}"
+    export i386_CFLAGS="${_base} ${_arch_x32} ${_warn} ${_warn_c} ${_debug}"
+    export i386_CXXFLAGS="${_base} ${_arch_x32} ${_warn} ${_debug}"
+    export i386_LDFLAGS="${_base} ${_arch_x32}"
+
     export x86_64_CC="${CROSSCC_X64}"
-    export i386_CFLAGS="${_CROSS_I386_FLAGS}"
-    export x86_64_CFLAGS="${_CROSS_X64_FLAGS}"
+    export x86_64_CFLAGS="${_base} ${_arch_x64_pe} ${_warn} ${_warn_c} ${_debug}"
+    export x86_64_CXXFLAGS="${_base} ${_arch_x64_pe} ${_warn} ${_debug}"
+    export x86_64_LDFLAGS="${_base} ${_arch_x64_pe}"
+
+    # fallbacks, only used for archs not set above
+    export CROSSCFLAGS="${x86_64_CFLAGS}"
+    export CROSSCXXFLAGS="${x86_64_CXXFLAGS}"
+    export CROSSLDFLAGS="${_base}"
 }
 
 ## ------------------------------------------------------------

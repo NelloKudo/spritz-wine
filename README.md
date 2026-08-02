@@ -14,10 +14,9 @@ Spritz-Wine builds are also available in all [an-anime-team](https://github.com/
 
 - Rebased to **latest wine-staging**
 - Includes fixes for games compatibility from [dwproton](https://dawn.wine/dawn-winery/dwproton)
-- Includes winewayland patches from [Proton-EM](https://github.com/Etaash-mathamsetty/Proton) rebased to latest wine
 - Bundles both **fsync/NTsync** in the same build, with NTsync used by default if available
 - Includes many of Wine-TkG's fixes
-- Backported and reworked many patches from Proton, mostly aiming controllers
+- Imported a few patches from Proton, mostly aiming controllers
 - Includes some QoL fixes for dropping inputs, random crashes and alt-tabbing
 
 ## Useful environmental variables
@@ -27,11 +26,11 @@ Spritz-Wine builds are also available in all [an-anime-team](https://github.com/
   - `WINEFSYNC=0`: disables fsync, fallbacks to server sync
 
 - Spritz patches:
+  - `WINE_ENABLE_TIMEOUT_FIX=1`: enables experimental timeout fix when needed (GI/ZZZ not launching)
+  - `WINE_ENABLE_STEAM_STUB=1`: launches the executable using the `steam.exe` stub in the builds
+  - `WINE_USE_WINEDMO=1`: enables the winedmo renderer backend
   - `WINE_DISABLE_DISCONNECT=1`: disables the disconnecting trick when enabled by default
   - `WINE_ENABLE_DISCONNECT=1`: enables the disconnecting trick
-  - `WINE_ENABLE_STEAM_STUB=1`: launches the executable using the `steam.exe` stub in the builds
-  - `WINE_ENABLE_TIMEOUT_FIX=1`: enables experimental timeout fix when needed
-  - `WINE_USE_WINEDMO=1`: enables the winedmo renderer backend
 
 - Proton imported patches:
   - `PROTON_PREFER_SDL=1`: uses SDL instead of hidraw, disabling it (already default)

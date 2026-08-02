@@ -1,17 +1,17 @@
-From 1b1e3e74cc0fba84a087ebaeab02b43f0cd761f1 Mon Sep 17 00:00:00 2001
+From 5fa0b55283fb9e4ccf2409189b89d1b69e22000c Mon Sep 17 00:00:00 2001
 From: Ziia Shi <mkrsym1@gmail.com>
 Date: Sun, 1 Feb 2026 01:56:27 +0100
-Subject: [PATCH 52/70] winewayland: Implement SetIMEEnabled driver call.
+Subject: [PATCH 3/5] winewayland: Implement SetIMEEnabled driver call.
 
 ---
- dlls/winewayland.drv/wayland_text_input.c | 95 ++++++++++++++++++++---
- dlls/winewayland.drv/waylanddrv.h         |  4 +
+ dlls/winewayland.drv/wayland_text_input.c | 93 ++++++++++++++++++++---
+ dlls/winewayland.drv/waylanddrv.h         |  5 ++
  dlls/winewayland.drv/waylanddrv_main.c    |  1 +
- dlls/winewayland.drv/window.c             |  2 +
- 4 files changed, 91 insertions(+), 11 deletions(-)
+ dlls/winewayland.drv/window.c             | 18 +++++
+ 4 files changed, 106 insertions(+), 11 deletions(-)
 
 diff --git a/dlls/winewayland.drv/wayland_text_input.c b/dlls/winewayland.drv/wayland_text_input.c
-index f92f051f918..dd740ebf147 100644
+index 5ed08578e28..34b525e627e 100644
 --- a/dlls/winewayland.drv/wayland_text_input.c
 +++ b/dlls/winewayland.drv/wayland_text_input.c
 @@ -77,10 +77,40 @@ static void wayland_text_input_reset_all_state(struct wayland_text_input *text_i
@@ -55,7 +55,7 @@ index f92f051f918..dd740ebf147 100644
      HWND hwnd;
  
      if (!surface) return;
-@@ -88,17 +118,15 @@ static void text_input_enter(void *data, struct zwp_text_input_v3 *zwp_text_inpu
+@@ -88,16 +118,15 @@ static void text_input_enter(void *data, struct zwp_text_input_v3 *zwp_text_inpu
      hwnd = wl_surface_get_user_data(surface);
      TRACE("data %p, text_input %p, hwnd %p.\n", data, zwp_text_input_v3, hwnd);
  
@@ -72,12 +72,12 @@ index f92f051f918..dd740ebf147 100644
 +    if (win->num_ime_children) wayland_text_input_ime_enable(text_input);
      pthread_mutex_unlock(&text_input->mutex);
  
-     activate_keyboard_hkl(hwnd, TRUE);
 +    wayland_win_data_release(win);
++
+     activate_keyboard_hkl(hwnd, TRUE);
  }
  
- static void text_input_leave(void *data, struct zwp_text_input_v3 *zwp_text_input_v3,
-@@ -108,14 +136,12 @@ static void text_input_leave(void *data, struct zwp_text_input_v3 *zwp_text_inpu
+@@ -108,14 +137,12 @@ static void text_input_leave(void *data, struct zwp_text_input_v3 *zwp_text_inpu
      TRACE("data %p, text_input %p.\n", data, zwp_text_input_v3);
  
      pthread_mutex_lock(&text_input->mutex);
@@ -93,7 +93,7 @@ index f92f051f918..dd740ebf147 100644
      pthread_mutex_unlock(&text_input->mutex);
  }
  
-@@ -205,6 +231,7 @@ void wayland_text_input_init(void)
+@@ -205,6 +232,7 @@ void wayland_text_input_init(void)
      text_input->zwp_text_input_v3 = zwp_text_input_manager_v3_get_text_input(
              process_wayland.zwp_text_input_manager_v3, process_wayland.seat.wl_seat);
      zwp_text_input_v3_add_listener(text_input->zwp_text_input_v3, &text_input_listener, text_input);
@@ -101,7 +101,7 @@ index f92f051f918..dd740ebf147 100644
      pthread_mutex_unlock(&text_input->mutex);
  };
  
-@@ -216,6 +243,7 @@ void wayland_text_input_deinit(void)
+@@ -216,6 +244,7 @@ void wayland_text_input_deinit(void)
      zwp_text_input_v3_destroy(text_input->zwp_text_input_v3);
      text_input->zwp_text_input_v3 = NULL;
      text_input->focused_hwnd = NULL;
@@ -109,7 +109,7 @@ index f92f051f918..dd740ebf147 100644
      wayland_text_input_reset_all_state(text_input);
      pthread_mutex_unlock(&text_input->mutex);
  };
-@@ -233,13 +261,13 @@ BOOL WAYLAND_SetIMECompositionRect(HWND hwnd, RECT rect)
+@@ -234,13 +263,13 @@ BOOL WAYLAND_SetIMECompositionRect(HWND hwnd, RECT rect)
  
      pthread_mutex_lock(&text_input->mutex);
  
@@ -125,14 +125,11 @@ index f92f051f918..dd740ebf147 100644
      {
          wayland_win_data_release(data);
          goto err;
-@@ -266,3 +294,48 @@ err:
+@@ -263,3 +292,45 @@ err:
      pthread_mutex_unlock(&text_input->mutex);
      return FALSE;
  }
 +
-+/***********************************************************************
-+ *      SetIMEEnabled (WAYLANDDRV.@)
-+ */
 +BOOL WAYLAND_SetIMEEnabled(HWND hwnd, BOOL enabled)
 +{
 +    struct wayland_text_input *text_input = &process_wayland.text_input;
@@ -175,10 +172,10 @@ index f92f051f918..dd740ebf147 100644
 +    return FALSE;
 +}
 diff --git a/dlls/winewayland.drv/waylanddrv.h b/dlls/winewayland.drv/waylanddrv.h
-index 232ffaa80a3..aa792d350be 100644
+index fa590eecd13..35dad2a4f60 100644
 --- a/dlls/winewayland.drv/waylanddrv.h
 +++ b/dlls/winewayland.drv/waylanddrv.h
-@@ -175,6 +175,7 @@ struct wayland_text_input
+@@ -133,6 +133,7 @@ struct wayland_text_input
      } preedit, current_preedit;
      WCHAR *commit_string;
      HWND focused_hwnd;
@@ -186,8 +183,8 @@ index 232ffaa80a3..aa792d350be 100644
      pthread_mutex_t mutex;
  };
  
-@@ -477,6 +478,8 @@ struct wayland_win_data
-     BOOL is_fullscreen;
+@@ -383,9 +384,12 @@ struct wayland_win_data
+     BOOL resizeable;
      BOOL managed;
      BOOL layered_attribs_set;
 +    BOOL ime_enabled;
@@ -195,28 +192,32 @@ index 232ffaa80a3..aa792d350be 100644
  };
  
  struct wayland_win_data *wayland_win_data_get(HWND hwnd);
-@@ -561,6 +564,7 @@ LRESULT WAYLAND_DesktopWindowProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp);
++struct wayland_win_data *wayland_win_data_get_nolock(HWND hwnd);
+ void wayland_win_data_release(struct wayland_win_data *data);
+ 
+ struct wayland_client_surface *get_client_surface(HWND hwnd);
+@@ -454,6 +458,7 @@ BOOL WAYLAND_ClipCursor(const RECT *clip, BOOL reset);
+ LRESULT WAYLAND_DesktopWindowProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp);
  void WAYLAND_DestroyWindow(HWND hwnd);
- void WAYLAND_FlashWindowEx(FLASHWINFO *info);
  BOOL WAYLAND_SetIMECompositionRect(HWND hwnd, RECT rect);
 +BOOL WAYLAND_SetIMEEnabled(HWND hwnd, BOOL enable);
  void WAYLAND_SetCursor(HWND hwnd, HCURSOR hcursor);
  BOOL WAYLAND_SetCursorPos(INT x, INT y);
  void WAYLAND_SetLayeredWindowAttributes(HWND hwnd, COLORREF key, BYTE alpha, DWORD flags);
 diff --git a/dlls/winewayland.drv/waylanddrv_main.c b/dlls/winewayland.drv/waylanddrv_main.c
-index b1bf31678c1..56fc22f7fa5 100644
+index 275a3907f92..9237b501ccc 100644
 --- a/dlls/winewayland.drv/waylanddrv_main.c
 +++ b/dlls/winewayland.drv/waylanddrv_main.c
-@@ -40,6 +40,7 @@ static const struct user_driver_funcs waylanddrv_funcs =
+@@ -39,6 +39,7 @@ static const struct user_driver_funcs waylanddrv_funcs =
+     .pDesktopWindowProc = WAYLAND_DesktopWindowProc,
      .pDestroyWindow = WAYLAND_DestroyWindow,
-     .pFlashWindowEx = WAYLAND_FlashWindowEx,
      .pSetIMECompositionRect = WAYLAND_SetIMECompositionRect,
 +    .pSetIMEEnabled = WAYLAND_SetIMEEnabled,
      .pKbdLayerDescriptor = WAYLAND_KbdLayerDescriptor,
      .pReleaseKbdTables = WAYLAND_ReleaseKbdTables,
      .pSetCursor = WAYLAND_SetCursor,
 diff --git a/dlls/winewayland.drv/window.c b/dlls/winewayland.drv/window.c
-index 62f843fa7c2..87d31ef1bb4 100644
+index c726d482bce..0e1bc45ae91 100644
 --- a/dlls/winewayland.drv/window.c
 +++ b/dlls/winewayland.drv/window.c
 @@ -71,6 +71,8 @@ static struct wayland_win_data *wayland_win_data_create(HWND hwnd, const struct
@@ -225,9 +226,29 @@ index 62f843fa7c2..87d31ef1bb4 100644
      data->rects = *rects;
 +    data->ime_enabled = FALSE;
 +    data->num_ime_children = 0;
-     list_init( &data->client_surface_cache );
  
      pthread_mutex_lock(&win_data_mutex);
--- 
-2.54.0
-
+ 
+@@ -121,6 +123,22 @@ struct wayland_win_data *wayland_win_data_get(HWND hwnd)
+     return NULL;
+ }
+ 
++/***********************************************************************
++ *           wayland_win_data_get_nolock
++ *
++ * Return the data structure associated with a window, without taking the
++ * lock. The caller must already hold it, e.g. through wayland_win_data_get.
++ */
++struct wayland_win_data *wayland_win_data_get_nolock(HWND hwnd)
++{
++    struct rb_entry *entry;
++
++    if ((entry = rb_get(&win_data_rb, hwnd)))
++        return RB_ENTRY_VALUE(entry, struct wayland_win_data, entry);
++
++    return NULL;
++}
++
+ /***********************************************************************
+  *           wayland_win_data_release
+  *

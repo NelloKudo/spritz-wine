@@ -1,27 +1,28 @@
-From 9365f55c2bec33ad6b435aaee4badb6115161316 Mon Sep 17 00:00:00 2001
+From 7f8d1cf0bc04710f596e7bcf66aed38e25aae753 Mon Sep 17 00:00:00 2001
 From: NelloKudo <marshnelloosu@gmail.com>
 Date: Thu, 18 Sep 2025 11:50:52 +0200
-Subject: [PATCH 05/10] HACK: ntdll: Set WINE_ENABLE_STEAM_STUB for some games.
+Subject: [PATCH] HACK: ntdll: Set WINE_ENABLE_STEAM_STUB for some games.
 
 Based on Proton's hacks_init() function.
 ---
- dlls/ntdll/unix/loader.c | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ dlls/ntdll/unix/loader.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
 diff --git a/dlls/ntdll/unix/loader.c b/dlls/ntdll/unix/loader.c
-index c461b08c5aa..7d817c4e2b3 100644
+index c1321ce679d..0204179f0fe 100644
 --- a/dlls/ntdll/unix/loader.c
 +++ b/dlls/ntdll/unix/loader.c
-@@ -1878,6 +1878,18 @@ static ULONG_PTR get_image_address(void)
+@@ -1848,6 +1848,19 @@ static ULONG_PTR get_image_address(void)
      return 0;
  }
  
 +static void hacks_init(void)
 +{
-+    if (main_argc > 1 && 
-+        (strstr(main_argv[1], "GenshinImpact.exe") || 
-+         strstr(main_argv[1], "YuanShen.exe") || 
-+         strstr(main_argv[1], "fpsunlock.exe") || 
++    if (main_argc > 1 &&
++        (strstr(main_argv[1], "GenshinImpact.exe") ||
++         strstr(main_argv[1], "YuanShen.exe") ||
++         strstr(main_argv[1], "fpsunlock.exe") ||
++         strstr(main_argv[1], "BH3.exe") || 
 +         strstr(main_argv[1], "ZenlessZoneZero.exe")))
 +    {
 +        setenv("WINE_ENABLE_STEAM_STUB", "1", 0);
@@ -31,7 +32,7 @@ index c461b08c5aa..7d817c4e2b3 100644
  /***********************************************************************
   *           start_main_thread
   */
-@@ -1887,6 +1899,7 @@ static void start_main_thread(void)
+@@ -1857,6 +1870,7 @@ static void start_main_thread(void)
  
      dbg_init();
      startup_info_size = server_init_process();
@@ -40,5 +41,5 @@ index c461b08c5aa..7d817c4e2b3 100644
      init_cpu_info();
      init_files();
 -- 
-2.54.0
+2.55.0
 

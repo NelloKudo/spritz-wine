@@ -1,0 +1,89 @@
+From 605ecc09bc59abbba04bba55812a6f27c18987e3 Mon Sep 17 00:00:00 2001
+From: Etaash Mathamsetty
+ <45927311+Etaash-mathamsetty@users.noreply.github.com>
+Date: Sun, 2 Aug 2026 21:01:44 +0200
+Subject: [PATCH] HACK: winewayland: Implement WAYLANDDRV_PRIMARY_MONITOR env.
+
+---
+ dlls/winewayland.drv/display.c | 61 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 61 insertions(+)
+
+diff --git a/dlls/winewayland.drv/display.c b/dlls/winewayland.drv/display.c
+index 1d46d64df6f..6bc658a2b28 100644
+--- a/dlls/winewayland.drv/display.c
++++ b/dlls/winewayland.drv/display.c
+@@ -160,6 +160,64 @@ static BOOL output_info_array_resolve_overlaps(struct wl_array *output_info_arra
+     return found_overlap;
+ }
+ 
++static void output_info_array_zero_primary(struct wl_array *output_info_array)
++{
++    const char *env = getenv("WAYLANDDRV_PRIMARY_MONITOR");
++    int x_offset = 0, y_offset = 0;
++    struct output_info *info;
++    UINT64 max_score = 0;
++    int count = 0;
++
++    if (env)
++    {
++        wl_array_for_each(info, output_info_array)
++        {
++            if (!strcmp(info->output->name, env))
++            {
++                x_offset = info->x;
++                y_offset = info->y;
++                count++;
++            }
++        }
++
++        if (count > 1)
++        {
++            x_offset = 0;
++            y_offset = 0;
++            ERR("More than one output with name %s\n", debugstr_a(env));
++        }
++        else if (count == 0)
++        {
++            ERR("Could not find output %s\n", debugstr_a(env));
++        }
++    }
++    else
++    {
++        /* rank monitors by bandwidth */
++        wl_array_for_each(info, output_info_array)
++        {
++            struct wayland_output_mode *mode = info->output->current_mode;
++            UINT64 score = (UINT64)mode->height *
++                        (UINT64)mode->width * ((UINT64)(mode->refresh + 500) / 1000)
++                        - (INT64)(info->output->logical_x / 100)
++                        - (INT64)(info->output->logical_y / 100);
++
++            if (score > max_score)
++            {
++                x_offset = info->x;
++                y_offset = info->y;
++                max_score = score;
++            }
++        }
++    }
++
++    wl_array_for_each(info, output_info_array)
++    {
++        info->x -= x_offset;
++        info->y -= y_offset;
++    }
++}
++
+ static void output_info_array_arrange_physical_coords(struct wl_array *output_info_array)
+ {
+     struct output_info *info;
+@@ -179,6 +237,9 @@ static void output_info_array_arrange_physical_coords(struct wl_array *output_in
+            ++steps < num_outputs)
+         continue;
+ 
++    /* places the primary output at 0,0 and offsets the other outputs accordingly */
++    output_info_array_zero_primary(output_info_array);
++
+     /* Now that we have our physical pixel coordinates, sort from physical left
+      * to right, but ensure the primary output is first. */
+     qsort(output_info_array->data, num_outputs, sizeof(struct output_info),

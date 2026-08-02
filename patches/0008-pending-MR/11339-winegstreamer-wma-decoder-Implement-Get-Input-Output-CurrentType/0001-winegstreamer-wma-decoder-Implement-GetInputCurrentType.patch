@@ -1,0 +1,51 @@
+From 793b50f81de20f60bc1146f2f03f6b37f3bcea07 Mon Sep 17 00:00:00 2001
+From: Nello De Gregoris <bluechxindv@gmail.com>
+Date: Fri, 10 Jul 2026 17:17:36 +0200
+Subject: [PATCH] winegstreamer/wma_decoder: Implement GetInputCurrentType.
+
+---
+ dlls/mf/tests/transform.c        |  2 +-
+ dlls/winegstreamer/wma_decoder.c | 14 ++++++++++++--
+ 2 files changed, 13 insertions(+), 3 deletions(-)
+
+diff --git a/dlls/mf/tests/transform.c b/dlls/mf/tests/transform.c
+index 4dcff7ef8cc..d574bff2154 100644
+--- a/dlls/mf/tests/transform.c
++++ b/dlls/mf/tests/transform.c
+@@ -3662,7 +3662,7 @@ static void test_wma_decoder(void)
+ 
+     check_mft_set_input_type_required(transform, input_type_desc);
+     check_mft_set_input_type(transform, input_type_desc, S_OK);
+-    check_mft_get_input_current_type_(__LINE__, transform, expect_input_type_desc, TRUE, FALSE);
++    check_mft_get_input_current_type_(__LINE__, transform, expect_input_type_desc, FALSE, FALSE);
+ 
+     check_mft_get_input_stream_info(transform, MF_E_TRANSFORM_TYPE_NOT_SET, NULL);
+     check_mft_get_output_stream_info(transform, MF_E_TRANSFORM_TYPE_NOT_SET, NULL);
+diff --git a/dlls/winegstreamer/wma_decoder.c b/dlls/winegstreamer/wma_decoder.c
+index e5e6cc616d1..80b9f01df13 100644
+--- a/dlls/winegstreamer/wma_decoder.c
++++ b/dlls/winegstreamer/wma_decoder.c
+@@ -468,8 +468,18 @@ failed:
+ 
+ static HRESULT WINAPI transform_GetInputCurrentType(IMFTransform *iface, DWORD id, IMFMediaType **type)
+ {
+-    FIXME("iface %p, id %lu, type %p stub!\n", iface, id, type);
+-    return E_NOTIMPL;
++    struct wma_decoder *decoder = impl_from_IMFTransform(iface);
++
++    TRACE("iface %p, id %lu, type %p.\n", iface, id, type);
++
++    if (!type)
++        return E_POINTER;
++    if (id)
++        return MF_E_INVALIDSTREAMNUMBER;
++    if (IsEqualGUID(&decoder->input_type.majortype, &GUID_NULL))
++        return MF_E_TRANSFORM_TYPE_NOT_SET;
++
++    return MFCreateMediaTypeFromRepresentation(AM_MEDIA_TYPE_REPRESENTATION, &decoder->input_type, type);
+ }
+ 
+ static HRESULT WINAPI transform_GetOutputCurrentType(IMFTransform *iface, DWORD id, IMFMediaType **type)
+-- 
+GitLab
+

@@ -1,7 +1,7 @@
-From 19679bb4451a8ce9e6bcb7a0a1588d885d539052 Mon Sep 17 00:00:00 2001
+From 049dbc932ffd8b3de4731b62cdc260cd8de027a2 Mon Sep 17 00:00:00 2001
 From: Ziia Shi <mkrsym1@gmail.com>
 Date: Tue, 3 Feb 2026 20:54:24 +0100
-Subject: [PATCH 54/70] win32u: Call SetIMEEnabled from
+Subject: [PATCH 5/5] win32u: Call SetIMEEnabled from
  NtUserAssociateInputContext.
 
 ---
@@ -9,7 +9,7 @@ Subject: [PATCH 54/70] win32u: Call SetIMEEnabled from
  1 file changed, 3 insertions(+)
 
 diff --git a/dlls/win32u/imm.c b/dlls/win32u/imm.c
-index 1c1cad94b3f..95209686c06 100644
+index 03c454d7377..77fd380dc05 100644
 --- a/dlls/win32u/imm.c
 +++ b/dlls/win32u/imm.c
 @@ -220,6 +220,9 @@ UINT WINAPI NtUserAssociateInputContext( HWND hwnd, HIMC ctx, ULONG flags )
@@ -22,6 +22,3 @@ index 1c1cad94b3f..95209686c06 100644
      return ret;
  }
  
--- 
-2.54.0
-

@@ -1,0 +1,60 @@
+From c17e5154281b1722675eb8f084ca614d1a9fdea7 Mon Sep 17 00:00:00 2001
+From: Nello De Gregoris <bluechxindv@gmail.com>
+Date: Fri, 10 Jul 2026 17:18:27 +0200
+Subject: [PATCH] winegstreamer/wma_decoder: Implement GetOutputCurrentType.
+
+---
+ dlls/mf/tests/transform.c        |  4 ++--
+ dlls/winegstreamer/wma_decoder.c | 14 ++++++++++++--
+ 2 files changed, 14 insertions(+), 4 deletions(-)
+
+diff --git a/dlls/mf/tests/transform.c b/dlls/mf/tests/transform.c
+index d574bff2154..7de9c431e02 100644
+--- a/dlls/mf/tests/transform.c
++++ b/dlls/mf/tests/transform.c
+@@ -3658,7 +3658,7 @@ static void test_wma_decoder(void)
+ 
+     /* setting output media type first doesn't work */
+     check_mft_set_output_type(transform, output_type_desc, MF_E_TRANSFORM_TYPE_NOT_SET);
+-    check_mft_get_output_current_type_(__LINE__, transform, NULL, TRUE, FALSE);
++    check_mft_get_output_current_type_(__LINE__, transform, NULL, FALSE, FALSE);
+ 
+     check_mft_set_input_type_required(transform, input_type_desc);
+     check_mft_set_input_type(transform, input_type_desc, S_OK);
+@@ -3684,7 +3684,7 @@ static void test_wma_decoder(void)
+ 
+     check_mft_set_output_type_required(transform, output_type_desc);
+     check_mft_set_output_type(transform, output_type_desc, S_OK);
+-    check_mft_get_output_current_type_(__LINE__, transform, expect_output_type_desc, TRUE, FALSE);
++    check_mft_get_output_current_type_(__LINE__, transform, expect_output_type_desc, FALSE, FALSE);
+ 
+     check_mft_get_input_stream_info(transform, S_OK, &input_info);
+     check_mft_get_output_stream_info(transform, S_OK, &output_info);
+diff --git a/dlls/winegstreamer/wma_decoder.c b/dlls/winegstreamer/wma_decoder.c
+index 80b9f01df13..8b1bce45866 100644
+--- a/dlls/winegstreamer/wma_decoder.c
++++ b/dlls/winegstreamer/wma_decoder.c
+@@ -484,8 +484,18 @@ static HRESULT WINAPI transform_GetInputCurrentType(IMFTransform *iface, DWORD i
+ 
+ static HRESULT WINAPI transform_GetOutputCurrentType(IMFTransform *iface, DWORD id, IMFMediaType **type)
+ {
+-    FIXME("iface %p, id %lu, type %p stub!\n", iface, id, type);
+-    return E_NOTIMPL;
++    struct wma_decoder *decoder = impl_from_IMFTransform(iface);
++
++    TRACE("iface %p, id %lu, type %p.\n", iface, id, type);
++
++    if (!type)
++        return E_POINTER;
++    if (id)
++        return MF_E_INVALIDSTREAMNUMBER;
++    if (IsEqualGUID(&decoder->output_type.majortype, &GUID_NULL))
++        return MF_E_TRANSFORM_TYPE_NOT_SET;
++
++    return MFCreateMediaTypeFromRepresentation(AM_MEDIA_TYPE_REPRESENTATION, &decoder->output_type, type);
+ }
+ 
+ static HRESULT WINAPI transform_GetInputStatus(IMFTransform *iface, DWORD id, DWORD *flags)
+-- 
+GitLab
+

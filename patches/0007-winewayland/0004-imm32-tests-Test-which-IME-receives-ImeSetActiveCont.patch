@@ -1,18 +1,18 @@
-From 81725081851f6cdb2de8d8ab6291cf4a3c722197 Mon Sep 17 00:00:00 2001
+From 288570fb626939e625135965a3a1d42cf9ba928d Mon Sep 17 00:00:00 2001
 From: Ziia Shi <mkrsym1@gmail.com>
 Date: Tue, 3 Feb 2026 18:30:01 +0100
-Subject: [PATCH 53/70] imm32/tests: Test which IME receives
- ImeSetActiveContext deactivation call after layout change.
+Subject: [PATCH 4/5] imm32/tests: Test which IME receives ImeSetActiveContext
+ deactivation call after layout change.
 
 ---
  dlls/imm32/tests/imm32.c | 21 +++++++++++++++++++++
  1 file changed, 21 insertions(+)
 
 diff --git a/dlls/imm32/tests/imm32.c b/dlls/imm32/tests/imm32.c
-index c4d1404f3ea..03fbff21533 100644
+index 90960609069..ca0dc9ecff5 100644
 --- a/dlls/imm32/tests/imm32.c
 +++ b/dlls/imm32/tests/imm32.c
-@@ -5582,6 +5582,27 @@ static void test_ImmSetActiveContext(void)
+@@ -5532,6 +5532,27 @@ static void test_DefWindowProc(void)
  
      ok_ret( 1, ImmActivateLayout( hkl ) );
      ok_ret( 1, ImmLoadIME( hkl ) );
@@ -40,6 +40,3 @@ index c4d1404f3ea..03fbff21533 100644
      process_messages();
      memset( ime_calls, 0, sizeof(ime_calls) );
      ime_call_count = 0;
--- 
-2.54.0
-

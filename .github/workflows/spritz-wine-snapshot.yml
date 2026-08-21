@@ -1,0 +1,55 @@
+name: Spritz-Wine-Snapshot
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Debloat GitHub CI
+      uses: endersonmenezes/free-disk-space@v3
+      with:
+        remove_android: true
+        remove_dotnet: true
+        remove_haskell: true
+
+    - name: Checkout
+      uses: actions/checkout@v7
+
+    - name: Restore ccache
+      id: ccache-restore
+      uses: actions/cache/restore@v6
+      with:
+        path: ./ccache
+        key: ccache-snapshot-${{ github.run_id }}
+        restore-keys: |
+          ccache-snapshot-
+
+    - name: Docker Setup Buildx
+      uses: docker/setup-buildx-action@v4
+      with:
+        driver: docker
+
+    - name: Get today's date
+      id: date
+      run: echo "date=$(date +'%Y-%m-%d')" >> "$GITHUB_OUTPUT"
+
+    - name: Run build.sh
+      run: |
+        chmod +x build.sh
+        ./build.sh
+
+    - name: Save ccache
+      if: always()
+      uses: actions/cache/save@v6
+      with:
+        path: ./ccache
+        key: ${{ steps.ccache-restore.outputs.cache-primary-key }}
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v7
+      with:
+        name: spritz-wine-snapshot-${{ steps.date.outputs.date }}
+        path: ./*.tar.xz

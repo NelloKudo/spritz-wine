@@ -1,0 +1,13 @@
+diff --git a/dlls/ntdll/unix/signal_x86_64.c b/dlls/ntdll/unix/signal_x86_64.c
+index e612e5e0d3e..92f52b37a81 100644
+--- a/dlls/ntdll/unix/signal_x86_64.c
++++ b/dlls/ntdll/unix/signal_x86_64.c
+@@ -2839,8 +2839,6 @@ void signal_init_process( TEB *teb )
+     if (sigaction( SIGINT, &sig_act, NULL ) == -1) goto error;
+     sig_act.sa_sigaction = fpe_handler;
+     if (sigaction( SIGFPE, &sig_act, NULL ) == -1) goto error;
+-    sig_act.sa_sigaction = abrt_handler;
+-    if (sigaction( SIGABRT, &sig_act, NULL ) == -1) goto error;
+     sig_act.sa_sigaction = quit_handler;
+     if (sigaction( SIGQUIT, &sig_act, NULL ) == -1) goto error;
+     sig_act.sa_sigaction = usr1_handler;

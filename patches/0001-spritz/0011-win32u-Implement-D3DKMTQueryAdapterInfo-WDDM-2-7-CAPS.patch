@@ -1,0 +1,91 @@
+From cb3c71e66f3bf5dd71fdccdc0f5ffce7b996d2fc Mon Sep 17 00:00:00 2001
+From: Zhiyi Zhang <zzhang@codeweavers.com>
+Date: Tue, 10 Dec 2024 12:05:34 +0800
+Subject: [PATCH] win32u: Implement D3DKMTQueryAdapterInfo WDDM_2_7_CAPS.
+
+Used by applications to query support for hardware scheduling for GPU
+workloads. This is used as a proxy to determine scheduling guarantees
+between userspace command submission and GPU execution.
+
+Advertise hardware scheduling for the proprietary NVIDIA Vulkan driver,
+which uses userspace submission. It is enabled by default and can be
+disabled by setting WINE_DISABLE_HARDWARE_SCHEDULING to a nonzero value.
+
+Adapted from ValveSoftware/wine commit cb3c71e66f3bf5dd71fdccdc0f5ffce7b996d2fc
+for Wine 11.14 / Spritz Wine 11.14-1.
+
+From: Liam Middlebrook <lmiddlebrook@nvidia.com>
+Signed-off-by: Liam Middlebrook <lmiddlebrook@nvidia.com>
+Link: https://github.com/ValveSoftware/wine/pull/259
+---
+ dlls/win32u/d3dkmt.c | 40 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 40 insertions(+)
+
+diff --git a/dlls/win32u/d3dkmt.c b/dlls/win32u/d3dkmt.c
+index 9b5d4a8c91..600d14dba6 100644
+--- a/dlls/win32u/d3dkmt.c
++++ b/dlls/win32u/d3dkmt.c
+@@ -29,6 +29,7 @@
+ #include "ntgdi_private.h"
+ #include "win32u_private.h"
+ #include "ntuser_private.h"
++#include "d3dkmdt.h"
+ 
+ #include <d3d9types.h>
+ #include <dxgi.h>
+@@ -683,6 +684,8 @@ NTSTATUS WINAPI NtGdiDdDDIDestroyDevice( const D3DKMT_DESTROYDEVICE *desc )
+  */
+ NTSTATUS WINAPI NtGdiDdDDIQueryAdapterInfo( D3DKMT_QUERYADAPTERINFO *desc )
+ {
++    struct d3dkmt_adapter *adapter;
++
+     TRACE( "(%p).\n", desc );
+ 
+     if (!desc || !desc->hAdapter || !desc->pPrivateDriverData)
+@@ -710,6 +713,43 @@ NTSTATUS WINAPI NtGdiDdDDIQueryAdapterInfo( D3DKMT_QUERYADAPTERINFO *desc )
+         *value = KMT_DRIVERVERSION_WDDM_3_1;
+         return STATUS_SUCCESS;
+     }
++    case KMTQAITYPE_WDDM_2_7_CAPS:
++    {
++        VkPhysicalDeviceDriverPropertiesKHR driver_properties;
++        struct vulkan_physical_device *physical_device;
++        VkPhysicalDeviceProperties2KHR properties2;
++        struct vulkan_instance *instance;
++        D3DKMT_WDDM_2_7_CAPS *data;
++        const char *env;
++
++        if (!(adapter = get_d3dkmt_object( desc->hAdapter, D3DKMT_ADAPTER ))) return STATUS_INVALID_PARAMETER;
++        if (!(physical_device = adapter->physical_device)) return STATUS_INVALID_PARAMETER;
++        instance = physical_device->instance;
++
++        memset( &driver_properties, 0, sizeof(driver_properties) );
++        memset( &properties2, 0, sizeof(properties2) );
++        driver_properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES_KHR;
++        properties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR;
++        properties2.pNext = &driver_properties;
++        instance->p_vkGetPhysicalDeviceProperties2KHR( physical_device->host.physical_device, &properties2 );
++
++        /*
++         * Advertise hardware scheduling as enabled for NVIDIA adapters. The
++         * NVIDIA driver uses userspace submission. Allow overriding this via
++         * the WINE_DISABLE_HARDWARE_SCHEDULING environment variable.
++         */
++        data = desc->pPrivateDriverData;
++        memset( data, 0, sizeof(*data) );
++        env = getenv( "WINE_DISABLE_HARDWARE_SCHEDULING" );
++        if ((!env || !*env || *env == '0') && driver_properties.driverID == VK_DRIVER_ID_NVIDIA_PROPRIETARY)
++        {
++            data->HwSchEnabled = 1;
++            data->HwSchSupported = 1;
++            data->HwSchEnabledByDefault = 1;
++        }
++
++        return STATUS_SUCCESS;
++    }
+     default:
+     {
+         FIXME( "type %d not handled.\n", desc->Type );
+-- 
+2.53.0
+

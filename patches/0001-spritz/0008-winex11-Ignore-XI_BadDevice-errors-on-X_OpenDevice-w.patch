@@ -9,7 +9,7 @@ Subject: [PATCH 08/10] winex11: Ignore XI_BadDevice errors on X_OpenDevice
  1 file changed, 9 insertions(+)
 
 diff --git a/dlls/winex11.drv/x11drv_main.c b/dlls/winex11.drv/x11drv_main.c
-index 2697b801531..595d8b0a628 100644
+index 82bc85bcb41..aec403ea197 100644
 --- a/dlls/winex11.drv/x11drv_main.c
 +++ b/dlls/winex11.drv/x11drv_main.c
 @@ -226,6 +226,15 @@ static inline BOOL ignore_error( Display *display, XErrorEvent *event )
@@ -28,6 +28,7 @@ index 2697b801531..595d8b0a628 100644
      return FALSE;
  }
  
+
 -- 
 2.54.0
 

@@ -9,9 +9,9 @@ Subject: [PATCH 1/8] ntdll/loader: add support for overriding
  dlls/ntdll/ntdll.spec          |  3 +++
  dlls/ntdll/signal_arm64ec.c    |  1 +
  dlls/ntdll/unix/unix_private.h |  2 ++
- dlls/ntdll/unix/virtual.c      | 22 ++++++++++++++++++++--
+ dlls/ntdll/unix/virtual.c      | 23 +++++++++++++++++++++--
  dlls/wow64/system.c            |  6 ++++++
- 6 files changed, 39 insertions(+), 3 deletions(-)
+ 6 files changed, 40 insertions(+), 3 deletions(-)
 
 diff --git a/dlls/kernel32/heap.c b/dlls/kernel32/heap.c
 index 834f4d07e9b..4d27b38ddca 100644
@@ -54,10 +54,10 @@ index 834f4d07e9b..4d27b38ddca 100644
          if (lpBuffer->dwTotalPhys > MAXLONG) lpBuffer->dwTotalPhys = MAXLONG;
          if (lpBuffer->dwAvailPhys > MAXLONG) lpBuffer->dwAvailPhys = MAXLONG;
 diff --git a/dlls/ntdll/ntdll.spec b/dlls/ntdll/ntdll.spec
-index f396c334e2d..a400a8dc137 100644
+index 03dd02e585c..1bf7cdef900 100644
 --- a/dlls/ntdll/ntdll.spec
 +++ b/dlls/ntdll/ntdll.spec
-@@ -1764,6 +1764,9 @@
+@@ -1781,6 +1781,9 @@
  @ cdecl -norelay __wine_dbg_output(str)
  @ cdecl -norelay __wine_dbg_strdup(str)
  
@@ -68,10 +68,10 @@ index f396c334e2d..a400a8dc137 100644
  @ cdecl wine_get_version()
  @ cdecl wine_get_build_id()
 diff --git a/dlls/ntdll/signal_arm64ec.c b/dlls/ntdll/signal_arm64ec.c
-index b6a9aa5f045..bd24d233e3e 100644
+index 1a8174e7d71..4031dae5aaa 100644
 --- a/dlls/ntdll/signal_arm64ec.c
 +++ b/dlls/ntdll/signal_arm64ec.c
-@@ -339,6 +339,7 @@ ALL_SYSCALLS
+@@ -348,6 +348,7 @@ ALL_SYSCALLS
  
  #define SYSCALL_API __attribute__((hybrid_patchable))
  
@@ -80,10 +80,10 @@ index b6a9aa5f045..bd24d233e3e 100644
  DEFINE_SYSCALL(NtAccessCheck, (PSECURITY_DESCRIPTOR descr, HANDLE token, ACCESS_MASK access, GENERIC_MAPPING *mapping, PRIVILEGE_SET *privs, ULONG *retlen, ULONG *access_granted, NTSTATUS *access_status))
  DEFINE_SYSCALL(NtAccessCheckAndAuditAlarm, (UNICODE_STRING *subsystem, HANDLE handle, UNICODE_STRING *typename, UNICODE_STRING *objectname, PSECURITY_DESCRIPTOR descr, ACCESS_MASK access, GENERIC_MAPPING *mapping, BOOLEAN creation, ACCESS_MASK *access_granted, NTSTATUS *access_status, BOOLEAN *onclose))
 diff --git a/dlls/ntdll/unix/unix_private.h b/dlls/ntdll/unix/unix_private.h
-index 054865bbfb5..bafdb2656df 100644
+index 916a65f55dd..07ae6da9623 100644
 --- a/dlls/ntdll/unix/unix_private.h
 +++ b/dlls/ntdll/unix/unix_private.h
-@@ -739,4 +739,6 @@ static inline int is_gdt_sel( WORD sel )
+@@ -740,4 +740,6 @@ static inline int is_gdt_sel( WORD sel )
  
  #endif  /* defined(__i386__) || defined(__x86_64__) */
  
@@ -91,12 +91,12 @@ index 054865bbfb5..bafdb2656df 100644
 +
  #endif /* __NTDLL_UNIX_PRIVATE_H */
 diff --git a/dlls/ntdll/unix/virtual.c b/dlls/ntdll/unix/virtual.c
-index 0ae77bc1510..875c1b58f7b 100644
+index 9dabc178834..ec4d350f73a 100644
 --- a/dlls/ntdll/unix/virtual.c
 +++ b/dlls/ntdll/unix/virtual.c
-@@ -5088,6 +5088,24 @@ static void virtual_release_address_space(void)
- 
- #endif  /* _WIN64 */
+@@ -4067,6 +4067,25 @@ static struct thread_data *init_thread_data( void *ptr )
+     return data;
+ }
  
 +BOOL WINAPI __wine_needs_override_large_address_aware(void)
 +{
@@ -116,15 +116,20 @@ index 0ae77bc1510..875c1b58f7b 100644
 +    return (main_image_info.ImageCharacteristics & IMAGE_FILE_LARGE_ADDRESS_AWARE)
 +           || __wine_needs_override_large_address_aware();
 +}
- 
- /***********************************************************************
-  *           virtual_set_large_address_space
-@@ -5107,11 +5125,11 @@ void virtual_set_large_address_space(void)
-                 free_reserved_memory( 0, (char *)0x7ffe0000 );
++
+ /* enable use of a large address space when allowed by the application */
+ static void set_large_address_space(void)
+ {
+@@ -4089,7 +4108,7 @@ static void set_large_address_space(void)
+             if (use_aslr()) free_reserved_memory( 0, (char *)0x7ffe0000 );
  #endif
          }
--        else user_space_wow_limit = ((main_image_info.ImageCharacteristics & IMAGE_FILE_LARGE_ADDRESS_AWARE) ? limit_4g : limit_2g) - 1;
-+        else user_space_wow_limit = (is_large_address_aware() ? limit_4g : limit_2g) - 1;
+-        else if (main_image_info.ImageCharacteristics & IMAGE_FILE_LARGE_ADDRESS_AWARE)
++        else if (is_large_address_aware())
+         {
+             user_space_wow_limit = limit_4g - 1;
+             /* reserve space for top-down allocations; some apps break if the entire high 2G is available */
+@@ -4099,7 +4118,7 @@ static void set_large_address_space(void)
      }
      else
      {
@@ -134,10 +139,10 @@ index 0ae77bc1510..875c1b58f7b 100644
      }
      user_space_limit = working_set_limit = address_space_limit;
 diff --git a/dlls/wow64/system.c b/dlls/wow64/system.c
-index 644c3ae9945..6ad8b89880b 100644
+index eb57d35f41e..8b108b406d6 100644
 --- a/dlls/wow64/system.c
 +++ b/dlls/wow64/system.c
-@@ -857,3 +857,9 @@ NTSTATUS WINAPI wow64_NtWow64GetNativeSystemInformation( UINT *args )
+@@ -886,3 +886,9 @@ NTSTATUS WINAPI wow64_NtWow64GetNativeSystemInformation( UINT *args )
          return STATUS_INVALID_INFO_CLASS;
      }
  }
@@ -147,6 +152,7 @@ index 644c3ae9945..6ad8b89880b 100644
 +{
 +    return __wine_needs_override_large_address_aware();
 +}
+
 -- 
 2.54.0
 

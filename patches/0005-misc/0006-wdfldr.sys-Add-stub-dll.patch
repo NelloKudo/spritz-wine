@@ -14,10 +14,10 @@ Subject: [PATCH 06/12] wdfldr.sys: Add stub dll.
  create mode 100644 dlls/wdfldr.sys/wdfldr_main.c
 
 diff --git a/configure.ac b/configure.ac
-index 4dfb34274d0..781a10da3fc 100644
+index cb94e928ddc..4fdbebb87fa 100644
 --- a/configure.ac
 +++ b/configure.ac
-@@ -3298,6 +3298,7 @@ WINE_CONFIG_MAKEFILE(dlls/wbemdisp)
+@@ -3312,6 +3312,7 @@ WINE_CONFIG_MAKEFILE(dlls/wbemdisp)
  WINE_CONFIG_MAKEFILE(dlls/wbemdisp/tests)
  WINE_CONFIG_MAKEFILE(dlls/wbemprox)
  WINE_CONFIG_MAKEFILE(dlls/wbemprox/tests)
@@ -148,6 +148,7 @@ index 00000000000..419c50b1b44
 +    FIXME("%s %p %p stub!\n", debugstr_us(reg_path), bind_info, component_globals);
 +    return STATUS_SUCCESS;
 +}
+
 -- 
 2.54.0
 

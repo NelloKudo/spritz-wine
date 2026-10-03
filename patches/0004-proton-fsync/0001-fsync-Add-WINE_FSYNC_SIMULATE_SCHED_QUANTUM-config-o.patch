@@ -13,10 +13,10 @@ CW-Bug-Id: #20155
  2 files changed, 11 insertions(+)
 
 diff --git a/dlls/ntdll/unix/env.c b/dlls/ntdll/unix/env.c
-index 785b6ffdcc8..3b6cbfe360d 100644
+index 42d10e30593..60a01a45de7 100644
 --- a/dlls/ntdll/unix/env.c
 +++ b/dlls/ntdll/unix/env.c
-@@ -75,6 +75,7 @@ static const WCHAR bootstrapW[] = {'W','I','N','E','B','O','O','T','S','T','R','
+@@ -76,6 +76,7 @@ static const WCHAR bootstrapW[] = {'W','I','N','E','B','O','O','T','S','T','R','
  int main_argc = 0;
  char **main_argv = NULL;
  WCHAR **main_wargv = NULL;
@@ -24,7 +24,7 @@ index 785b6ffdcc8..3b6cbfe360d 100644
  
  static LCID user_lcid, system_lcid;
  static LANGID user_ui_language;
-@@ -824,6 +825,7 @@ static void init_locale(void)
+@@ -826,6 +827,7 @@ static void init_locale(void)
  void init_environment(void)
  {
      USHORT *case_table;
@@ -32,7 +32,7 @@ index 785b6ffdcc8..3b6cbfe360d 100644
  
      init_unix_codepage();
      init_locale();
-@@ -833,6 +835,14 @@ void init_environment(void)
+@@ -835,6 +837,14 @@ void init_environment(void)
          uctable = case_table + 2;
          lctable = case_table + case_table[1] + 2;
      }
@@ -48,10 +48,10 @@ index 785b6ffdcc8..3b6cbfe360d 100644
  
  
 diff --git a/dlls/ntdll/unix/unix_private.h b/dlls/ntdll/unix/unix_private.h
-index bafdb2656df..90cfa695c35 100644
+index 07ae6da9623..24c5c0d0e17 100644
 --- a/dlls/ntdll/unix/unix_private.h
 +++ b/dlls/ntdll/unix/unix_private.h
-@@ -212,6 +212,7 @@ extern BOOL is_prefix_bootstrap;
+@@ -222,6 +222,7 @@ extern ULONG session_id;
  extern int main_argc;
  extern char **main_argv;
  extern WCHAR **main_wargv;
@@ -59,6 +59,7 @@ index bafdb2656df..90cfa695c35 100644
  extern const WCHAR system_dir[];
  extern unsigned int supported_machines_count;
  extern USHORT supported_machines[8];
+
 -- 
 2.54.0
 

@@ -9,10 +9,10 @@ Subject: [PATCH 01/10] winediag: Change logging and redirect to Spritz
  1 file changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/dlls/ntdll/loader.c b/dlls/ntdll/loader.c
-index 7b8f831b3e1..a4f6bffbd5b 100644
+index 3085eb33dfe..22f0e2a5737 100644
 --- a/dlls/ntdll/loader.c
 +++ b/dlls/ntdll/loader.c
-@@ -4630,12 +4630,12 @@ void loader_init( CONTEXT *context, void **entry )
+@@ -4655,12 +4655,12 @@ void loader_init( CONTEXT *context, void **entry )
      InitializeObjectAttributes( &staging_event_attr, &staging_event_string, OBJ_OPENIF, NULL, NULL );
      if (NtCreateEvent( &staging_event, EVENT_ALL_ACCESS, &staging_event_attr, NotificationEvent, FALSE ) == STATUS_SUCCESS)
      {
@@ -28,6 +28,7 @@ index 7b8f831b3e1..a4f6bffbd5b 100644
          NtClose( staging_event );
      }
  
+
 -- 
 2.54.0
 

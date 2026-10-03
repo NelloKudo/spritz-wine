@@ -51,11 +51,11 @@ rather than the full alternative sync primitives implementation.
  create mode 100644 server/fsync.h
 
 diff --git a/configure.ac b/configure.ac
-index 862577a8900..4dfb34274d0 100644
+index c55cb101eb5..cb94e928ddc 100644
 --- a/configure.ac
 +++ b/configure.ac
-@@ -737,6 +737,7 @@ AC_CHECK_HEADERS(\
- 	linux/cdrom.h \
+@@ -730,6 +730,7 @@ AC_CHECK_HEADERS(\
+ 	linux/errqueue.h \
  	linux/filter.h \
  	linux/fs.h \
 +	linux/futex.h \
@@ -63,10 +63,10 @@ index 862577a8900..4dfb34274d0 100644
  	linux/hidraw.h \
  	linux/input.h \
 diff --git a/dlls/ntdll/Makefile.in b/dlls/ntdll/Makefile.in
-index 022583aa20e..2d0d3f69ad5 100644
+index 9a15bc319a4..0a419e3751e 100644
 --- a/dlls/ntdll/Makefile.in
 +++ b/dlls/ntdll/Makefile.in
-@@ -53,6 +53,7 @@ SOURCES = \
+@@ -54,6 +54,7 @@ SOURCES = \
  	unix/debug.c \
  	unix/env.c \
  	unix/file.c \
@@ -1356,7 +1356,7 @@ index 00000000000..cc12907fb6a
 +    return fsync_enabled;
 +}
 diff --git a/dlls/ntdll/unix/server.c b/dlls/ntdll/unix/server.c
-index d0f6a0947b3..000b77d52b5 100644
+index 7c948a05750..28f62110399 100644
 --- a/dlls/ntdll/unix/server.c
 +++ b/dlls/ntdll/unix/server.c
 @@ -84,6 +84,8 @@
@@ -1368,8 +1368,8 @@ index d0f6a0947b3..000b77d52b5 100644
  WINE_DEFAULT_DEBUG_CHANNEL(server);
  WINE_DECLARE_DEBUG_CHANNEL(syscall);
  
-@@ -1737,7 +1739,12 @@ size_t server_init_process(void)
-             info_size         = reply->info_size;
+@@ -1737,7 +1739,12 @@ void server_init_process( struct thread_data *data )
+             startup_info_size = reply->info_size;
              server_start_time = reply->server_start;
              supported_machines_count = wine_server_reply_size( reply ) / sizeof(*supported_machines);
 -            if (reply->inproc_device)
@@ -1383,7 +1383,7 @@ index d0f6a0947b3..000b77d52b5 100644
                  inproc_device_fd = wine_server_receive_fd( &handle );
                  assert( handle == reply->inproc_device );
 diff --git a/dlls/ntdll/unix/sync.c b/dlls/ntdll/unix/sync.c
-index fbf054e9d93..0d883debf0d 100644
+index 829c7128b14..b24cba96ee5 100644
 --- a/dlls/ntdll/unix/sync.c
 +++ b/dlls/ntdll/unix/sync.c
 @@ -72,6 +72,8 @@
@@ -1521,7 +1521,7 @@ index fbf054e9d93..0d883debf0d 100644
      if (inproc_device_fd < 0) return STATUS_NOT_IMPLEMENTED;
  
      if ((ret = get_inproc_sync( signal, INPROC_SYNC_UNKNOWN, 0, &stack_signal, &signal_sync ))) return ret;
-@@ -2423,6 +2454,12 @@ NTSTATUS WINAPI NtDelayExecution( BOOLEAN alertable, const LARGE_INTEGER *timeou
+@@ -2426,6 +2457,12 @@ NTSTATUS WINAPI NtDelayExecution( BOOLEAN alertable, const LARGE_INTEGER *timeou
      /* if alertable, we need to query the server */
      if (alertable)
      {
@@ -1535,18 +1535,18 @@ index fbf054e9d93..0d883debf0d 100644
             we never return STATUS_NO_YIELD_PERFORMED */
          if ((status = server_wait( NULL, 0, SELECT_INTERRUPTIBLE | SELECT_ALERTABLE, timeout )) == STATUS_TIMEOUT)
 diff --git a/dlls/ntdll/unix/unix_private.h b/dlls/ntdll/unix/unix_private.h
-index a30f776b0ec..d36da0e6731 100644
+index 61c2315b4bc..d02eed56d7d 100644
 --- a/dlls/ntdll/unix/unix_private.h
 +++ b/dlls/ntdll/unix/unix_private.h
-@@ -112,6 +112,7 @@ struct thread_data
-     BOOL         suspend;           /* suspend on startup */
+@@ -123,6 +123,7 @@ struct thread_data
+     BOOL         filesys_redir;     /* WOW64_TLS_FILESYSREDIR before the TEB is created */
      pthread_t    pthread_id;        /* pthread thread id */
      void        *jmp_buf;           /* setjmp buffer for exception handling */
 +    int         *fsync_apc_futex;
      void        *start;             /* thread entry point */
      void        *param;             /* thread entry point parameter */
      struct list  entry;             /* entry in TEB list */
-@@ -127,6 +128,11 @@ static inline struct thread_data *get_thread_data(void)
+@@ -138,6 +139,11 @@ static inline struct thread_data *get_thread_data(void)
      return pthread_getspecific( thread_data_key );
  }
  
@@ -1558,7 +1558,7 @@ index a30f776b0ec..d36da0e6731 100644
  /* thread private data, stored in NtCurrentTeb()->GdiTebBatch */
  struct teb_data
  {
-@@ -251,6 +257,7 @@ extern unsigned int server_select( const union select_op *select_op, data_size_t
+@@ -261,6 +267,7 @@ extern unsigned int server_select( const union select_op *select_op, data_size_t
                                     timeout_t abs_timeout, struct context_data *context, struct user_apc *user_apc );
  extern unsigned int server_wait( const union select_op *select_op, data_size_t size, UINT flags,
                                   const LARGE_INTEGER *timeout );
@@ -1567,22 +1567,22 @@ index a30f776b0ec..d36da0e6731 100644
  extern unsigned int server_queue_process_apc( HANDLE process, const union apc_call *call,
                                                union apc_result *result );
 diff --git a/dlls/ntdll/unix/virtual.c b/dlls/ntdll/unix/virtual.c
-index 875c1b58f7b..7c6a2d8aa44 100644
+index ec4d350f73a..67560b2345d 100644
 --- a/dlls/ntdll/unix/virtual.c
 +++ b/dlls/ntdll/unix/virtual.c
-@@ -4160,6 +4160,7 @@ struct thread_data *virtual_alloc_thread_data(void)
-         data->wait_fd[0] = -1;
-         data->wait_fd[1] = -1;
-         data->alert_fd   = -1;
-+        data->fsync_apc_futex = NULL;
+@@ -4061,6 +4061,7 @@ static struct thread_data *init_thread_data( void *ptr )
+     data->wait_fd[0] = -1;
+     data->wait_fd[1] = -1;
+     data->alert_fd   = -1;
++    data->fsync_apc_futex = NULL;
  #ifdef VALGRIND_STACK_REGISTER
-         VALGRIND_STACK_REGISTER( (char *)data + signal_stack_mask + 1, (char *)data + view->size );
+     VALGRIND_STACK_REGISTER( (char *)data + signal_stack_mask + 1, (char *)data + kernel_stack_size );
  #endif
 diff --git a/server/Makefile.in b/server/Makefile.in
-index 84a6bd74d9d..d9ac607f66f 100644
+index 0dd53951c4f..48693aeaea2 100644
 --- a/server/Makefile.in
 +++ b/server/Makefile.in
-@@ -15,6 +15,7 @@ SOURCES = \
+@@ -16,6 +16,7 @@ SOURCES = \
  	event.c \
  	fd.c \
  	file.c \
@@ -2010,7 +2010,7 @@ index 00000000000..c24e23b4895
 +    return (do_fsync_cached = fsync_check_support());
 +}
 diff --git a/server/inproc_sync.c b/server/inproc_sync.c
-index ef68ee04902..14c52363c53 100644
+index 522d9a4e320..2e2946c0baf 100644
 --- a/server/inproc_sync.c
 +++ b/server/inproc_sync.c
 @@ -33,6 +33,8 @@
@@ -2044,7 +2044,7 @@ index ef68ee04902..14c52363c53 100644
      return fd;
  }
  
-@@ -102,8 +117,16 @@ struct inproc_sync *create_inproc_internal_sync( int manual, int signaled )
+@@ -86,8 +101,16 @@ struct inproc_sync *create_inproc_internal_sync( int manual, int signaled )
      struct inproc_sync *event;
  
      if (!(event = alloc_object( &inproc_sync_ops ))) return NULL;
@@ -2063,7 +2063,7 @@ index ef68ee04902..14c52363c53 100644
      list_init( &event->entry );
  
      if (event->fd == -1)
-@@ -121,8 +144,16 @@ struct inproc_sync *create_inproc_event_sync( int manual, int signaled )
+@@ -105,8 +128,16 @@ struct inproc_sync *create_inproc_event_sync( int manual, int signaled )
      struct inproc_sync *event;
  
      if (!(event = alloc_object( &inproc_sync_ops ))) return NULL;
@@ -2082,7 +2082,7 @@ index ef68ee04902..14c52363c53 100644
      list_init( &event->entry );
  
      if (event->fd == -1)
-@@ -140,8 +171,16 @@ struct inproc_sync *create_inproc_mutex_sync( thread_id_t owner, unsigned int co
+@@ -124,8 +155,16 @@ struct inproc_sync *create_inproc_mutex_sync( thread_id_t owner, unsigned int co
      struct inproc_sync *mutex;
  
      if (!(mutex = alloc_object( &inproc_sync_ops ))) return NULL;
@@ -2101,7 +2101,7 @@ index ef68ee04902..14c52363c53 100644
      list_add_tail( &inproc_mutexes, &mutex->entry );
  
      if (mutex->fd == -1)
-@@ -159,8 +198,17 @@ struct inproc_sync *create_inproc_semaphore_sync( unsigned int initial, unsigned
+@@ -143,8 +182,17 @@ struct inproc_sync *create_inproc_semaphore_sync( unsigned int initial, unsigned
      struct inproc_sync *sem;
  
      if (!(sem = alloc_object( &inproc_sync_ops ))) return NULL;
@@ -2121,7 +2121,7 @@ index ef68ee04902..14c52363c53 100644
      list_init( &sem->entry );
  
      if (sem->fd == -1)
-@@ -183,14 +231,16 @@ void signal_inproc_sync( struct inproc_sync *sync )
+@@ -167,14 +215,16 @@ void signal_inproc_sync( struct inproc_sync *sync )
  {
      __u32 count;
      if (debug_level) fprintf( stderr, "set_inproc_event %d\n", sync->fd );
@@ -2140,7 +2140,7 @@ index ef68ee04902..14c52363c53 100644
  }
  
  static int inproc_sync_signal( struct object *obj, unsigned int access, int signal )
-@@ -198,7 +248,8 @@ static int inproc_sync_signal( struct object *obj, unsigned int access, int sign
+@@ -182,7 +232,8 @@ static int inproc_sync_signal( struct object *obj, unsigned int access, int sign
      struct inproc_sync *sync = (struct inproc_sync *)obj;
      assert( obj->ops == &inproc_sync_ops );
  
@@ -2150,7 +2150,7 @@ index ef68ee04902..14c52363c53 100644
      assert( signal == 0 || signal == 1 ); /* never called from signal_object */
  
      if (signal) signal_inproc_sync( sync );
-@@ -211,13 +262,21 @@ static void inproc_sync_destroy( struct object *obj )
+@@ -195,13 +246,21 @@ static void inproc_sync_destroy( struct object *obj )
      struct inproc_sync *sync = (struct inproc_sync *)obj;
      assert( obj->ops == &inproc_sync_ops );
      list_remove( &sync->entry );
@@ -2173,7 +2173,7 @@ index ef68ee04902..14c52363c53 100644
      LIST_FOR_EACH_ENTRY( mutex, &inproc_mutexes, struct inproc_sync, entry )
          ioctl( mutex->fd, NTSYNC_IOC_MUTEX_KILL, &tid );
  }
-@@ -300,6 +359,7 @@ DECL_HANDLER(get_inproc_sync_fd)
+@@ -284,6 +343,7 @@ DECL_HANDLER(get_inproc_sync_fd)
      reply->access = get_handle_access( current->process, req->handle );
  
      if ((fd = get_obj_inproc_sync( obj, &reply->type )) < 0) set_error( STATUS_NOT_IMPLEMENTED );
@@ -2205,7 +2205,7 @@ index 46419a09cb4..7f3930ed31f 100644
      set_current_time();
      init_signals();
 diff --git a/server/process.c b/server/process.c
-index f3aa6797662..d7015f89b4e 100644
+index f1a8c065c76..0a0428da9bb 100644
 --- a/server/process.c
 +++ b/server/process.c
 @@ -64,6 +64,8 @@
@@ -2217,7 +2217,7 @@ index f3aa6797662..d7015f89b4e 100644
  /* process object */
  
  static struct list process_list = LIST_INIT(process_list);
-@@ -800,6 +802,7 @@ static void process_destroy( struct object *obj )
+@@ -738,6 +740,7 @@ static void process_destroy( struct object *obj )
      if (process->id) free_ptid( process->id );
      if (process->token) release_object( process->token );
      if (process->sync) release_object( process->sync );
@@ -2226,10 +2226,10 @@ index f3aa6797662..d7015f89b4e 100644
      free( process->rawinput_devices );
      free( process->dir_cache );
 diff --git a/server/protocol.def b/server/protocol.def
-index 59048fc46b3..83cf64ceb1a 100644
+index 937cd4fb8e6..f30bb55849b 100644
 --- a/server/protocol.def
 +++ b/server/protocol.def
-@@ -4176,6 +4176,7 @@ enum inproc_sync_type
+@@ -4230,6 +4230,7 @@ enum inproc_sync_type
  @REPLY
      int           type;         /* inproc sync type */
      unsigned int access;        /* handle access rights */
@@ -2237,7 +2237,7 @@ index 59048fc46b3..83cf64ceb1a 100644
  @END
  
  
-@@ -4183,6 +4184,7 @@ enum inproc_sync_type
+@@ -4237,6 +4238,7 @@ enum inproc_sync_type
  @REQ(get_inproc_alert_fd)
  @REPLY
      obj_handle_t handle;        /* alert fd is in flight with this handle */
@@ -2245,7 +2245,7 @@ index 59048fc46b3..83cf64ceb1a 100644
  @END
  
  
-@@ -4298,3 +4300,24 @@ enum inproc_sync_type
+@@ -4362,3 +4364,24 @@ enum inproc_sync_type
  @REPLY
      client_ptr_t  target_root;                /* root IDCompositionVisual pointer for the target created from this shared visual */
  @END
@@ -2271,7 +2271,7 @@ index 59048fc46b3..83cf64ceb1a 100644
 +@REPLY
 +@END
 diff --git a/server/thread.c b/server/thread.c
-index 5a730055682..3e059462f06 100644
+index 9518c1d13b8..7df857d5333 100644
 --- a/server/thread.c
 +++ b/server/thread.c
 @@ -60,6 +60,8 @@
@@ -2283,7 +2283,7 @@ index 5a730055682..3e059462f06 100644
  
  /* thread queues */
  
-@@ -1812,7 +1814,11 @@ DECL_HANDLER(init_first_thread)
+@@ -1770,7 +1772,11 @@ DECL_HANDLER(init_first_thread)
      set_reply_data( supported_machines,
                      min( supported_machines_count * sizeof(unsigned short), get_reply_max_size() ));
  
@@ -2296,7 +2296,7 @@ index 5a730055682..3e059462f06 100644
      {
          reply->inproc_device = get_process_id( process ) | 1;
          send_client_fd( process, fd, reply->inproc_device );
-@@ -2449,6 +2455,7 @@ DECL_HANDLER(get_inproc_alert_fd)
+@@ -2407,6 +2413,7 @@ DECL_HANDLER(get_inproc_alert_fd)
      int fd;
  
      if ((fd = get_inproc_sync_fd( current->alert_sync )) < 0) set_error( STATUS_INVALID_PARAMETER );
@@ -2304,6 +2304,7 @@ index 5a730055682..3e059462f06 100644
      else
      {
          reply->handle = get_thread_id( current ) | 1; /* arbitrary token */
+
 -- 
 2.54.0
 

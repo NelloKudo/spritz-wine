@@ -60,6 +60,7 @@ index 6c0152c9ca6..461f57ae627 100644
          {
              FIXME( "HACK: returning int3 stub instead of %s\n", function );
              return (FARPROC)&int3_stub;
+
 -- 
 2.54.0
 

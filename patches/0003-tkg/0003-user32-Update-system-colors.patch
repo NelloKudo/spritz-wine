@@ -9,10 +9,10 @@ Signed-off-by: Joshua Ashton <joshua@froggi.es>
  1 file changed, 23 insertions(+), 23 deletions(-)
 
 diff --git a/dlls/win32u/sysparams.c b/dlls/win32u/sysparams.c
-index 00fe10f30ca..8043dcb0221 100644
+index 6ed5b772320..a658736b1a1 100644
 --- a/dlls/win32u/sysparams.c
 +++ b/dlls/win32u/sysparams.c
-@@ -5712,37 +5712,37 @@ static char spi_loaded[SPI_INDEX_COUNT];
+@@ -5816,37 +5816,37 @@ static char spi_loaded[SPI_INDEX_COUNT];
  static struct sysparam_rgb_entry system_colors[] =
  {
  #define RGB_ENTRY(name,val,reg) { { get_rgb_entry, set_rgb_entry, init_rgb_entry, COLORS_KEY, reg }, (val) }
@@ -73,6 +73,7 @@ index 00fe10f30ca..8043dcb0221 100644
  #undef RGB_ENTRY
  };
  
+
 -- 
 2.54.0
 

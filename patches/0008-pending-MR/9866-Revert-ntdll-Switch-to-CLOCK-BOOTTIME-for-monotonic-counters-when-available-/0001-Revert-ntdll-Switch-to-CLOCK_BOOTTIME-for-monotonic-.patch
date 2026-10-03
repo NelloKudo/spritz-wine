@@ -11,7 +11,7 @@ This reverts commit 3d373e452388b60bea9dca6d5c4cf3f8b20a0c54.
  2 files changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/dlls/ntdll/unix/sync.c b/dlls/ntdll/unix/sync.c
-index 367f2dbbcf3..77b9df83b59 100644
+index f34b4e67808..63a0411785a 100644
 --- a/dlls/ntdll/unix/sync.c
 +++ b/dlls/ntdll/unix/sync.c
 @@ -98,8 +98,8 @@ static inline ULONGLONG monotonic_counter(void)
@@ -26,10 +26,10 @@ index 367f2dbbcf3..77b9df83b59 100644
  #endif
      if (!clock_gettime( CLOCK_MONOTONIC, &ts ))
 diff --git a/server/request.c b/server/request.c
-index fd09ca2ccc4..82b71de1cc8 100644
+index 5135ed50cfd..de7ff24549d 100644
 --- a/server/request.c
 +++ b/server/request.c
-@@ -514,8 +514,8 @@ timeout_t monotonic_counter(void)
+@@ -494,8 +494,8 @@ timeout_t monotonic_counter(void)
      return mach_continuous_time() * timebase.numer / timebase.denom / 100;
  #elif defined(HAVE_CLOCK_GETTIME)
      struct timespec ts;
@@ -40,6 +40,7 @@ index fd09ca2ccc4..82b71de1cc8 100644
          return (timeout_t)ts.tv_sec * TICKS_PER_SEC + ts.tv_nsec / 100;
  #endif
      if (!clock_gettime( CLOCK_MONOTONIC, &ts ))
+
 -- 
 2.54.0
 

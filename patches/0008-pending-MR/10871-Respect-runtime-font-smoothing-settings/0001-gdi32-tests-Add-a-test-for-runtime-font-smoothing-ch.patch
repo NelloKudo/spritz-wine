@@ -140,6 +140,7 @@ index 14e8a9b384f..62f62afa9d8 100644
      test_simple_graphics();
  
      CryptReleaseContext(crypt_prov, 0);
+
 -- 
 2.54.0
 

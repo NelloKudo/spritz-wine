@@ -9,10 +9,10 @@ Subject: [PATCH 5/5] win32u: Call SetIMEEnabled from
  1 file changed, 3 insertions(+)
 
 diff --git a/dlls/win32u/imm.c b/dlls/win32u/imm.c
-index 03c454d7377..77fd380dc05 100644
+index 28acfe8bc24..1e5f06cf90e 100644
 --- a/dlls/win32u/imm.c
 +++ b/dlls/win32u/imm.c
-@@ -220,6 +220,9 @@ UINT WINAPI NtUserAssociateInputContext( HWND hwnd, HIMC ctx, ULONG flags )
+@@ -217,6 +217,9 @@ UINT WINAPI NtUserAssociateInputContext( HWND hwnd, HIMC ctx, ULONG flags )
      }
  
      release_win_ptr( win );

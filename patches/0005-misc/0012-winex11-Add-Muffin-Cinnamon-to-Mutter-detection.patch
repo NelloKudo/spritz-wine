@@ -10,10 +10,10 @@ compositor Muffin, which is nothing but a Mutter fork.
  1 file changed, 1 insertion(+)
 
 diff --git a/dlls/winex11.drv/window.c b/dlls/winex11.drv/window.c
-index f5be4994be9..c19a433d8ad 100644
+index 44e2d11c3bb..e6e7c65b9bc 100644
 --- a/dlls/winex11.drv/window.c
 +++ b/dlls/winex11.drv/window.c
-@@ -3756,6 +3756,7 @@ void net_supporting_wm_check_init( struct x11drv_thread_data *data )
+@@ -3766,6 +3766,7 @@ void net_supporting_wm_check_init( struct x11drv_thread_data *data )
               get_window_wm_name( data->display, window, &data->window_manager ))
      {
          if (!strcmp( data->window_manager, "GNOME Shell" )) strcpy( data->window_manager, "Mutter" );
@@ -21,6 +21,7 @@ index f5be4994be9..c19a433d8ad 100644
          TRACE( "Detected window manager: %s\n", debugstr_a(data->window_manager) );
      }
  }
+
 -- 
 2.54.0
 

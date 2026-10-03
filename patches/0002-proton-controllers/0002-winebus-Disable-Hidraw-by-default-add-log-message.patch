@@ -11,10 +11,10 @@ in logs, as PROTON_ENABLE_HIDRAW=1 fixes it.
  1 file changed, 5 insertions(+), 1 deletion(-)
 
 diff --git a/dlls/winebus.sys/main.c b/dlls/winebus.sys/main.c
-index f449271a549..b61fc140a10 100644
+index 290b36a8b96..2cc999f4297 100644
 --- a/dlls/winebus.sys/main.c
 +++ b/dlls/winebus.sys/main.c
-@@ -531,6 +531,10 @@ static DWORD check_bus_option(const WCHAR *option, DWORD default_value)
+@@ -500,6 +500,10 @@ static DWORD check_bus_option(const WCHAR *option, DWORD default_value)
          if (info->Type == REG_DWORD) return *(DWORD *)info->Data;
      }
  
@@ -25,15 +25,16 @@ index f449271a549..b61fc140a10 100644
      return default_value;
  }
  
-@@ -1223,7 +1227,7 @@ static void bus_options_init(void)
+@@ -1215,7 +1219,7 @@ static void bus_options_init(void)
  {
      options.disable_sdl = !check_bus_option(L"Enable SDL", 1);
      if (options.disable_sdl) TRACE("SDL devices disabled in registry\n");
 -    options.disable_hidraw = check_bus_option(L"DisableHidraw", 0);
 +    options.disable_hidraw = check_bus_option(L"DisableHidraw", 1);
-     if (options.disable_hidraw) TRACE("UDEV hidraw devices disabled in registry\n");
+     if (options.disable_hidraw) TRACE("IOHID and UDEV hidraw devices disabled in registry\n");
      options.disable_input = check_bus_option(L"DisableInput", 0);
      if (options.disable_input) TRACE("UDEV input devices disabled in registry\n");
+
 -- 
 2.54.0
 

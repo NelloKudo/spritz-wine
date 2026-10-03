@@ -39,6 +39,7 @@ index a8f3a0af84b..5f3d9dd51b7 100644
      hOldPen = SelectObject(hdc, hNewPen);
      oldDrawMode = SetROP2(hdc, R2_NOT);
      oldBkMode = SetBkMode(hdc, TRANSPARENT);
+
 -- 
 2.54.0
 

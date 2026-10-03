@@ -9,7 +9,7 @@ Subject: [PATCH 3/3] ntdll: Improve futex queue selection to reduce
  1 file changed, 5 insertions(+), 2 deletions(-)
 
 diff --git a/dlls/ntdll/sync.c b/dlls/ntdll/sync.c
-index c49bd5bd1a4..c655e1e28e2 100644
+index ecbc018ae1f..7e24ad9b35f 100644
 --- a/dlls/ntdll/sync.c
 +++ b/dlls/ntdll/sync.c
 @@ -839,9 +839,12 @@ static struct futex_queue futex_queues[1024];
@@ -27,6 +27,7 @@ index c49bd5bd1a4..c655e1e28e2 100644
  }
  
  static void spin_lock( LONG *lock )
+
 -- 
 2.54.0
 

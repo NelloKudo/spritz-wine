@@ -8,7 +8,7 @@ Subject: [PATCH 5/6] fsync: Also disable NTsync via WINENTSYNC=0.
  1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/server/inproc_sync.c b/server/inproc_sync.c
-index 14c52363c53..2ca4cb39bd3 100644
+index 2e2946c0baf..9fd540d9c23 100644
 --- a/server/inproc_sync.c
 +++ b/server/inproc_sync.c
 @@ -51,7 +51,8 @@ int get_inproc_device_fd(void)
@@ -21,6 +21,7 @@ index 14c52363c53..2ca4cb39bd3 100644
              fd = -1;
          else
              fd = open( "/dev/ntsync", O_CLOEXEC | O_RDONLY );
+
 -- 
 2.54.0
 

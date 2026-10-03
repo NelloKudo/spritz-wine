@@ -11,10 +11,10 @@ Co-authored-by: Lily <lily@dawn.wine>
  1 file changed, 62 insertions(+)
 
 diff --git a/dlls/ws2_32/socket.c b/dlls/ws2_32/socket.c
-index f9be8bedcc7..ad49a588b2d 100644
+index 1456bc56656..d6ad4cd7078 100644
 --- a/dlls/ws2_32/socket.c
 +++ b/dlls/ws2_32/socket.c
-@@ -4090,6 +4090,66 @@ int WINAPI WSAAsyncSelect( SOCKET s, HWND window, UINT message, LONG mask )
+@@ -4093,6 +4093,66 @@ int WINAPI WSAAsyncSelect( SOCKET s, HWND window, UINT message, LONG mask )
      return status ? -1 : 0;
  }
  
@@ -81,7 +81,7 @@ index f9be8bedcc7..ad49a588b2d 100644
  
  /***********************************************************************
   *      WSACreateEvent          (WS2_32.31)
-@@ -4100,6 +4160,8 @@ WSAEVENT WINAPI WSACreateEvent(void)
+@@ -4103,6 +4163,8 @@ WSAEVENT WINAPI WSACreateEvent(void)
      /* Create a manual-reset event, with initial state: unsignaled */
      TRACE("\n");
  
@@ -90,6 +90,7 @@ index f9be8bedcc7..ad49a588b2d 100644
      return CreateEventW(NULL, TRUE, FALSE, NULL);
  }
  
+
 -- 
 2.54.0
 

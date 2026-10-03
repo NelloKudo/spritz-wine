@@ -9,7 +9,7 @@ From a patch first included in Proton 8, fixes issues with Unity games losing in
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/dlls/winex11.drv/x11drv_main.c b/dlls/winex11.drv/x11drv_main.c
-index 3411e9efbcf..2697b801531 100644
+index b14d4d1af6a..82bc85bcb41 100644
 --- a/dlls/winex11.drv/x11drv_main.c
 +++ b/dlls/winex11.drv/x11drv_main.c
 @@ -68,7 +68,7 @@ BOOL usexvidmode = TRUE;
@@ -21,6 +21,7 @@ index 3411e9efbcf..2697b801531 100644
  BOOL use_primary_selection = FALSE;
  BOOL use_system_cursors = TRUE;
  BOOL grab_fullscreen = FALSE;
+
 -- 
 2.54.0
 

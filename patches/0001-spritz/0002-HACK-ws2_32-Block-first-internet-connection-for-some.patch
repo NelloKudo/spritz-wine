@@ -11,7 +11,7 @@ various issues with WINE_DISABLE_DISCONNECT=1.
  1 file changed, 35 insertions(+)
 
 diff --git a/dlls/ws2_32/socket.c b/dlls/ws2_32/socket.c
-index 1b3730aa693..f9be8bedcc7 100644
+index 560904a1057..1456bc56656 100644
 --- a/dlls/ws2_32/socket.c
 +++ b/dlls/ws2_32/socket.c
 @@ -1422,6 +1422,29 @@ int WINAPI closesocket( SOCKET s )
@@ -63,6 +63,7 @@ index 1b3730aa693..f9be8bedcc7 100644
  
      char *unix_path = NULL;
      int unix_varargs_size = 0;
+
 -- 
 2.54.0
 

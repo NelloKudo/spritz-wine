@@ -20,6 +20,7 @@ index 962ee595887..d89fcda722c 100644
  {
      enum fsync_type type;
      unsigned int shm_idx;
+
 -- 
 2.54.0
 

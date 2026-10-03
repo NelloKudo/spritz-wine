@@ -44,6 +44,7 @@ index dd370237ed6..b50e81cee0c 100644
      }
  
      client_info->globals.Size = sizeof(WDF_COMPONENT_GLOBALS);
+
 -- 
 2.54.0
 

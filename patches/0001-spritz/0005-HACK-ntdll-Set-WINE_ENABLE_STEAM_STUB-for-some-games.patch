@@ -9,10 +9,10 @@ Based on Proton's hacks_init() function.
  1 file changed, 14 insertions(+)
 
 diff --git a/dlls/ntdll/unix/loader.c b/dlls/ntdll/unix/loader.c
-index c1321ce679d..0204179f0fe 100644
+index f3b71c153d3..889e493cf5f 100644
 --- a/dlls/ntdll/unix/loader.c
 +++ b/dlls/ntdll/unix/loader.c
-@@ -1848,6 +1848,19 @@ static ULONG_PTR get_image_address(void)
+@@ -1874,6 +1874,19 @@ static ULONG_PTR get_image_address(void)
      return 0;
  }
  
@@ -32,14 +32,15 @@ index c1321ce679d..0204179f0fe 100644
  /***********************************************************************
   *           start_main_thread
   */
-@@ -1857,6 +1870,7 @@ static void start_main_thread(void)
+@@ -1882,6 +1895,7 @@ static void start_main_thread(void)
+     struct thread_data *data = virtual_alloc_first_thread_data();
  
-     dbg_init();
-     startup_info_size = server_init_process();
+     server_init_process( data );
 +    hacks_init();
      virtual_map_user_shared_data();
      init_cpu_info();
      init_files();
+
 -- 
 2.55.0
 

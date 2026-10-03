@@ -15,10 +15,10 @@ the latest wine-tkg releases and might prove helpful to someone.
  2 files changed, 49 insertions(+), 7 deletions(-)
 
 diff --git a/dlls/winebus.sys/main.c b/dlls/winebus.sys/main.c
-index 0132297a4a6..f449271a549 100644
+index 8be5077e1b4..290b36a8b96 100644
 --- a/dlls/winebus.sys/main.c
 +++ b/dlls/winebus.sys/main.c
-@@ -493,6 +493,36 @@ static DWORD check_bus_option(const WCHAR *option, DWORD default_value)
+@@ -462,6 +462,36 @@ static DWORD check_bus_option(const WCHAR *option, DWORD default_value)
      KEY_VALUE_PARTIAL_INFORMATION *info = (KEY_VALUE_PARTIAL_INFORMATION *)buffer;
      UNICODE_STRING str;
      DWORD size;
@@ -94,6 +94,7 @@ index 0830a75016b..f43318b62a4 100644
          }
          CloseHandle(token);
      }
+
 -- 
 2.54.0
 

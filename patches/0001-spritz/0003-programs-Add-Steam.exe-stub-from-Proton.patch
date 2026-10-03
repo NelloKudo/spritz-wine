@@ -14,10 +14,10 @@ source for the file: https://github.com/ValveSoftware/Proton/tree/1e52f95633c514
  create mode 100644 programs/steam/steam.c
 
 diff --git a/configure.ac b/configure.ac
-index 237fd931196..f9eacc1e00d 100644
+index b63f3c391c9..c55cb101eb5 100644
 --- a/configure.ac
 +++ b/configure.ac
-@@ -3644,6 +3644,7 @@ WINE_CONFIG_MAKEFILE(programs/shutdown)
+@@ -3668,6 +3668,7 @@ WINE_CONFIG_MAKEFILE(programs/shutdown)
  WINE_CONFIG_MAKEFILE(programs/sort)
  WINE_CONFIG_MAKEFILE(programs/spoolsv)
  WINE_CONFIG_MAKEFILE(programs/start)
@@ -957,6 +957,7 @@ index 00000000000..fc13d6970fe
 +
 +    return rc;
 +}
+
 -- 
 2.54.0
 

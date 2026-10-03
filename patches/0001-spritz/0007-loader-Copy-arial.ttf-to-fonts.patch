@@ -8,7 +8,7 @@ Subject: [PATCH 07/10] loader: Copy arial.ttf to fonts.
  1 file changed, 7 insertions(+), 2 deletions(-)
 
 diff --git a/loader/wine.inf.in b/loader/wine.inf.in
-index c5116132839..a215c3ed220 100644
+index f4ae7dea7ff..8a4c4e7018c 100644
 --- a/loader/wine.inf.in
 +++ b/loader/wine.inf.in
 @@ -54,7 +54,7 @@ AddService=MountMgr,0x800,MountMgrService
@@ -29,7 +29,7 @@ index c5116132839..a215c3ed220 100644
  AddReg=\
      CurrentVersion,\
      Debugger,\
-@@ -1577,10 +1577,14 @@ windows.system.winmd
+@@ -1593,10 +1593,14 @@ windows.system.winmd
  windows.ui.winmd
  windows.ui.xaml.winmd
  
@@ -44,11 +44,12 @@ index c5116132839..a215c3ed220 100644
  
  [DestinationDirs]
  ColorFiles = 23
-@@ -1589,3 +1593,4 @@ InfFiles  = 17
+@@ -1605,3 +1609,4 @@ InfFiles  = 17
  NlsFiles  = 11
  SortFiles = 10,globalization\sorting
  WinmdFiles = 11,winmetadata
 +FontFiles = 20
+
 -- 
 2.54.0
 

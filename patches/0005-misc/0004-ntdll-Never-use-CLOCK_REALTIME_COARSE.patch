@@ -12,10 +12,10 @@ performance degradation by using CLOCK_REALTIME instead.
  1 file changed, 1 insertion(+), 16 deletions(-)
 
 diff --git a/dlls/ntdll/unix/sync.c b/dlls/ntdll/unix/sync.c
-index 0d883debf0d..a11d9b3c7d9 100644
+index b24cba96ee5..084bdecddaf 100644
 --- a/dlls/ntdll/unix/sync.c
 +++ b/dlls/ntdll/unix/sync.c
-@@ -2520,22 +2520,7 @@ NTSTATUS WINAPI NtQuerySystemTime( LARGE_INTEGER *time )
+@@ -2523,22 +2523,7 @@ NTSTATUS WINAPI NtQuerySystemTime( LARGE_INTEGER *time )
  {
  #ifdef HAVE_CLOCK_GETTIME
      struct timespec ts;
@@ -39,6 +39,7 @@ index 0d883debf0d..a11d9b3c7d9 100644
      {
          time->QuadPart = ticks_from_time_t( ts.tv_sec ) + (ts.tv_nsec + 50) / 100;
      }
+
 -- 
 2.54.0
 

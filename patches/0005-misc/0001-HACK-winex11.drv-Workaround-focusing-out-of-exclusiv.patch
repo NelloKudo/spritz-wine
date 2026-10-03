@@ -28,10 +28,10 @@ Original commits were:
  1 file changed, 9 insertions(+), 1 deletion(-)
 
 diff --git a/dlls/winex11.drv/window.c b/dlls/winex11.drv/window.c
-index 33dc2b5a8e0..9e345c23efa 100644
+index f676ed3a235..c2d33f0d1c8 100644
 --- a/dlls/winex11.drv/window.c
 +++ b/dlls/winex11.drv/window.c
-@@ -1500,7 +1500,15 @@ static void update_net_wm_states( struct x11drv_win_data *data )
+@@ -1498,7 +1498,15 @@ static void update_net_wm_states( struct x11drv_win_data *data )
          new_state |= (1 << NET_WM_STATE_MAXIMIZED);
  
      ex_style = NtUserGetWindowLongW( data->hwnd, GWL_EXSTYLE );
@@ -48,6 +48,7 @@ index 33dc2b5a8e0..9e345c23efa 100644
          new_state |= (1 << NET_WM_STATE_ABOVE);
      if (!data->add_taskbar)
      {
+
 -- 
 2.54.0
 

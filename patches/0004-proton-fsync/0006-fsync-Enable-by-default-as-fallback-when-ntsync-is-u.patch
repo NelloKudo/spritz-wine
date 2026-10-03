@@ -52,7 +52,7 @@ index 7d3ec646f9e..2e4f2430c62 100644
      return 0;
  #endif
 diff --git a/server/inproc_sync.c b/server/inproc_sync.c
-index 2ca4cb39bd3..12c8769d72a 100644
+index 9fd540d9c23..4a41078ff63 100644
 --- a/server/inproc_sync.c
 +++ b/server/inproc_sync.c
 @@ -61,7 +61,7 @@ int get_inproc_device_fd(void)
@@ -78,6 +78,7 @@ index 7f3930ed31f..5ef9fd00dd8 100644
      if (debug_level) fprintf( stderr, "wineserver: starting (pid=%ld)\n", (long) getpid() );
      set_current_time();
      init_signals();
+
 -- 
 2.54.0
 

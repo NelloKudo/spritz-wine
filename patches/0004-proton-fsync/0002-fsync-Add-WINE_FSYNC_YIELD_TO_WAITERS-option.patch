@@ -10,10 +10,10 @@ CW-Bug-Id: #22194
  2 files changed, 8 insertions(+)
 
 diff --git a/dlls/ntdll/unix/env.c b/dlls/ntdll/unix/env.c
-index 3b6cbfe360d..0f0a4a68e55 100644
+index 60a01a45de7..dfa5cdd7920 100644
 --- a/dlls/ntdll/unix/env.c
 +++ b/dlls/ntdll/unix/env.c
-@@ -76,6 +76,7 @@ int main_argc = 0;
+@@ -77,6 +77,7 @@ int main_argc = 0;
  char **main_argv = NULL;
  WCHAR **main_wargv = NULL;
  BOOL fsync_simulate_sched_quantum = FALSE;
@@ -21,7 +21,7 @@ index 3b6cbfe360d..0f0a4a68e55 100644
  
  static LCID user_lcid, system_lcid;
  static LANGID user_ui_language;
-@@ -843,6 +844,12 @@ void init_environment(void)
+@@ -845,6 +846,12 @@ void init_environment(void)
          fsync_simulate_sched_quantum = !!strstr( main_argv[1], "Ubisoft Game Launcher\\upc.exe" );
      if (fsync_simulate_sched_quantum)
          ERR( "HACK: Simulating sched quantum in fsync.\n" );
@@ -35,10 +35,10 @@ index 3b6cbfe360d..0f0a4a68e55 100644
  
  
 diff --git a/dlls/ntdll/unix/unix_private.h b/dlls/ntdll/unix/unix_private.h
-index 90cfa695c35..a30f776b0ec 100644
+index 24c5c0d0e17..61c2315b4bc 100644
 --- a/dlls/ntdll/unix/unix_private.h
 +++ b/dlls/ntdll/unix/unix_private.h
-@@ -213,6 +213,7 @@ extern int main_argc;
+@@ -223,6 +223,7 @@ extern int main_argc;
  extern char **main_argv;
  extern WCHAR **main_wargv;
  extern BOOL fsync_simulate_sched_quantum;
@@ -46,6 +46,7 @@ index 90cfa695c35..a30f776b0ec 100644
  extern const WCHAR system_dir[];
  extern unsigned int supported_machines_count;
  extern USHORT supported_machines[8];
+
 -- 
 2.54.0
 

@@ -104,6 +104,7 @@ index 419c50b1b44..dd370237ed6 100644
  }
  
  NTSTATUS WINAPI WdfVersionUnbind(UNICODE_STRING *reg_path, WDF_BIND_INFO *bind_info, 
+
 -- 
 2.54.0
 

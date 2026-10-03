@@ -45,6 +45,7 @@ index ac880100d38..6c0152c9ca6 100644
          RtlInitAnsiString( &str, function );
          if (!set_ntstatus( LdrGetProcedureAddress( hModule, &str, 0, (void**)&fp ))) return NULL;
      }
+
 -- 
 2.54.0
 

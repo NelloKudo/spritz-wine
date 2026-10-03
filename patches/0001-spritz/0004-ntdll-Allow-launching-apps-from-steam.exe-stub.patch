@@ -8,15 +8,15 @@ being launched on Linux and related systems: this allows doing so without
 any Proton script, but straight up from Wine.
 ---
  dlls/ntdll/unix/env.c          | 43 +++++++++++++++++++++++++++++-----
- dlls/ntdll/unix/loader.c       | 27 +++++++++++++++++++++
+ dlls/ntdll/unix/loader.c       | 28 ++++++++++++++++++++++
  dlls/ntdll/unix/unix_private.h |  1 +
- 3 files changed, 65 insertions(+), 6 deletions(-)
+ 3 files changed, 66 insertions(+), 6 deletions(-)
 
 diff --git a/dlls/ntdll/unix/env.c b/dlls/ntdll/unix/env.c
-index f7060b82d23..785b6ffdcc8 100644
+index bd888b9928b..42d10e30593 100644
 --- a/dlls/ntdll/unix/env.c
 +++ b/dlls/ntdll/unix/env.c
-@@ -1875,6 +1875,24 @@ static void init_peb( RTL_USER_PROCESS_PARAMETERS *params, void *module )
+@@ -1869,6 +1869,24 @@ static void init_peb( RTL_USER_PROCESS_PARAMETERS *params, BOOL debugged )
  }
  
  
@@ -41,15 +41,15 @@ index f7060b82d23..785b6ffdcc8 100644
  /*************************************************************************
   *		build_initial_params
   *
-@@ -1891,6 +1909,7 @@ static RTL_USER_PROCESS_PARAMETERS *build_initial_params( void **module )
+@@ -1885,6 +1903,7 @@ static RTL_USER_PROCESS_PARAMETERS *build_initial_params(void)
      WCHAR *curdir = get_initial_directory();
      UNICODE_STRING nt_name;
      NTSTATUS status;
 +    BOOL launch_with_steam = use_steam_stub();
-     TEB64 *teb64 = get_teb64( NtCurrentTeb() );
+     struct thread_data *data = get_thread_data();
  
-     if (teb64) teb64->TlsSlots[WOW64_TLS_FILESYSREDIR] = TRUE;
-@@ -1937,18 +1956,30 @@ static RTL_USER_PROCESS_PARAMETERS *build_initial_params( void **module )
+     data->filesys_redir = TRUE;
+@@ -1931,18 +1950,30 @@ static RTL_USER_PROCESS_PARAMETERS *build_initial_params(void)
          }
      }
  
@@ -60,37 +60,37 @@ index f7060b82d23..785b6ffdcc8 100644
 -        static const char *args[] = { "start.exe", "/exec" };
 +        static const char *args[] = { "steam.exe" };
          free( nt_name.Buffer );
-         if (*module) NtUnmapViewOfSection( GetCurrentProcess(), *module );
--        load_start_exe( &nt_name, module );
+         if (main_module) NtUnmapViewOfSection( GetCurrentProcess(), main_module );
+-        load_start_exe( &nt_name );
 -        prepend_argv( args, 2 );
-+        load_steam_exe( &nt_name, module );
++        load_steam_exe( &nt_name );
 +        prepend_argv( args, 1 );
      }
      else
      {
 -        rebuild_argv();
--        if (teb64) teb64->TlsSlots[WOW64_TLS_FILESYSREDIR] = FALSE;
+-        data->filesys_redir = FALSE;
 +        if (status)  /* try launching it through start.exe */
 +        {
 +            static const char *args[] = { "start.exe", "/exec" };
 +            free( nt_name.Buffer );
-+            if (*module) NtUnmapViewOfSection( GetCurrentProcess(), *module );
-+            load_start_exe( &nt_name, module );
++            if (main_module) NtUnmapViewOfSection( GetCurrentProcess(), main_module );
++            load_start_exe( &nt_name );
 +            prepend_argv( args, 2 );
 +        }
 +        else
 +        {
 +            rebuild_argv();
-+            if (teb64) teb64->TlsSlots[WOW64_TLS_FILESYSREDIR] = FALSE;
++            data->filesys_redir = FALSE;
 +        }
      }
  
-     main_wargv = build_wargv( get_dos_path( nt_name.Buffer ));
+     virtual_alloc_first_teb();
 diff --git a/dlls/ntdll/unix/loader.c b/dlls/ntdll/unix/loader.c
-index c1e6b588dcb..c461b08c5aa 100644
+index ebfb6af5387..f3b71c153d3 100644
 --- a/dlls/ntdll/unix/loader.c
 +++ b/dlls/ntdll/unix/loader.c
-@@ -1502,6 +1502,33 @@ NTSTATUS load_start_exe( UNICODE_STRING *nt_name, void **module )
+@@ -1497,6 +1497,34 @@ NTSTATUS load_start_exe( UNICODE_STRING *nt_name )
      return status;
  }
  
@@ -101,7 +101,7 @@ index c1e6b588dcb..c461b08c5aa 100644
 + * Load steam.exe as main image.
 + * Adapted from load_start_exe.
 + */
-+NTSTATUS load_steam_exe( UNICODE_STRING *nt_name, void **module )
++NTSTATUS load_steam_exe( UNICODE_STRING *nt_name )
 +{
 +    static const WCHAR startW[] = {'s','t','e','a','m','.','e','x','e',0};
 +    unsigned int status;
@@ -111,7 +111,8 @@ index c1e6b588dcb..c461b08c5aa 100644
 +    wcscpy( image, get_machine_wow64_dir( current_machine ));
 +    wcscat( image, startW );
 +    init_unicode_string( nt_name, image );
-+    status = find_builtin_dll( nt_name, NULL, module, &size, &main_image_info, 0, 0, current_machine, 0, FALSE, 0 );
++    status = find_builtin_dll( nt_name, NULL, &main_module, &size,
++                               &main_image_info, 0, 0, current_machine, 0, FALSE, 0 );
 +    if (!NT_SUCCESS(status))
 +    {
 +        MESSAGE( "wine: failed to load steam.exe: %x\n", status );
@@ -125,17 +126,18 @@ index c1e6b588dcb..c461b08c5aa 100644
  {
      const DWORD *functions = (const DWORD *)((BYTE *)module + exports->AddressOfFunctions);
 diff --git a/dlls/ntdll/unix/unix_private.h b/dlls/ntdll/unix/unix_private.h
-index ef1d9ef5005..054865bbfb5 100644
+index 9b6401ee37d..916a65f55dd 100644
 --- a/dlls/ntdll/unix/unix_private.h
 +++ b/dlls/ntdll/unix/unix_private.h
-@@ -238,6 +238,7 @@ extern NTSTATUS load_unixlib_by_name( const UNICODE_STRING *nt_name, void **hand
+@@ -248,6 +248,7 @@ extern NTSTATUS load_unixlib_by_name( const UNICODE_STRING *nt_name, void **hand
  extern BOOL is_system_dir_path( const UNICODE_STRING *path, WORD *machine );
- extern NTSTATUS load_main_exe( UNICODE_STRING *nt_name, USHORT load_machine, void **module );
- extern NTSTATUS load_start_exe( UNICODE_STRING *nt_name, void **module );
-+extern NTSTATUS load_steam_exe( UNICODE_STRING *nt_name, void **module );
+ extern NTSTATUS load_main_exe( UNICODE_STRING *nt_name, USHORT load_machine );
+ extern NTSTATUS load_start_exe( UNICODE_STRING *nt_name );
++extern NTSTATUS load_steam_exe( UNICODE_STRING *nt_name );
  extern ULONG_PTR redirect_arm64ec_rva( void *module, ULONG_PTR rva, const IMAGE_ARM64EC_METADATA *metadata );
  extern void start_server( BOOL debug );
  
+
 -- 
 2.54.0
 

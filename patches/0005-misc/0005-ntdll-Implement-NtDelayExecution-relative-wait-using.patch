@@ -11,10 +11,10 @@ Some applications are very timing sensitive.
  1 file changed, 20 insertions(+), 5 deletions(-)
 
 diff --git a/dlls/ntdll/unix/sync.c b/dlls/ntdll/unix/sync.c
-index a11d9b3c7d9..367f2dbbcf3 100644
+index 084bdecddaf..f34b4e67808 100644
 --- a/dlls/ntdll/unix/sync.c
 +++ b/dlls/ntdll/unix/sync.c
-@@ -2471,16 +2471,31 @@ NTSTATUS WINAPI NtDelayExecution( BOOLEAN alertable, const LARGE_INTEGER *timeou
+@@ -2474,16 +2474,31 @@ NTSTATUS WINAPI NtDelayExecution( BOOLEAN alertable, const LARGE_INTEGER *timeou
      {
          for (;;) select( 0, NULL, NULL, NULL, NULL );
      }
@@ -51,6 +51,7 @@ index a11d9b3c7d9..367f2dbbcf3 100644
  
          /* Note that we yield after establishing the desired timeout, but
             we only care about the result of the yield for zero timeouts */
+
 -- 
 2.54.0
 

@@ -11,10 +11,10 @@ Subject: [PATCH 10/12] winex11: Keep track of the window manager name.
  4 files changed, 79 insertions(+)
 
 diff --git a/dlls/winex11.drv/event.c b/dlls/winex11.drv/event.c
-index 6f553c52f06..81f470db3dc 100644
+index 884814b3557..11e459cc6b4 100644
 --- a/dlls/winex11.drv/event.c
 +++ b/dlls/winex11.drv/event.c
-@@ -1322,6 +1322,19 @@ static void handle_wm_normal_hints_notify( HWND hwnd, XPropertyEvent *event )
+@@ -1189,6 +1189,19 @@ static void handle_wm_normal_hints_notify( HWND hwnd, XPropertyEvent *event )
      release_win_data( data );
  }
  
@@ -34,7 +34,7 @@ index 6f553c52f06..81f470db3dc 100644
  static void handle_net_supported_notify( XPropertyEvent *event )
  {
      struct x11drv_thread_data *data = x11drv_thread_data();
-@@ -1359,6 +1372,7 @@ static BOOL X11DRV_PropertyNotify( HWND hwnd, XEvent *xev )
+@@ -1226,6 +1239,7 @@ static BOOL X11DRV_PropertyNotify( HWND hwnd, XEvent *xev )
      if (event->atom == x11drv_atom(WM_HINTS)) handle_wm_hints_notify( hwnd, event );
      if (event->atom == x11drv_atom(_MOTIF_WM_HINTS)) handle_mwm_hints_notify( hwnd, event );
      if (event->atom == x11drv_atom(WM_NORMAL_HINTS)) handle_wm_normal_hints_notify( hwnd, event );
@@ -43,10 +43,10 @@ index 6f553c52f06..81f470db3dc 100644
      if (event->atom == x11drv_atom(_NET_ACTIVE_WINDOW)) handle_net_active_window( event );
  
 diff --git a/dlls/winex11.drv/window.c b/dlls/winex11.drv/window.c
-index 9e345c23efa..eec282e228c 100644
+index c2d33f0d1c8..512f2267ea4 100644
 --- a/dlls/winex11.drv/window.c
 +++ b/dlls/winex11.drv/window.c
-@@ -3704,6 +3704,62 @@ void X11DRV_FlashWindowEx( FLASHWINFO *pfinfo )
+@@ -3714,6 +3714,62 @@ void X11DRV_FlashWindowEx( FLASHWINFO *pfinfo )
      release_win_data( data );
  }
  
@@ -110,7 +110,7 @@ index 9e345c23efa..eec282e228c 100644
  {
      unsigned long count, remaining;
 diff --git a/dlls/winex11.drv/x11drv.h b/dlls/winex11.drv/x11drv.h
-index b150e97ad8a..60b14269b38 100644
+index 22462df6051..3690685b54f 100644
 --- a/dlls/winex11.drv/x11drv.h
 +++ b/dlls/winex11.drv/x11drv.h
 @@ -229,6 +229,7 @@ extern BOOL X11DRV_CreateWindow( HWND hwnd );
@@ -121,15 +121,15 @@ index b150e97ad8a..60b14269b38 100644
  extern void X11DRV_GetDC( HDC hdc, HWND hwnd, HWND top, const RECT *win_rect,
                            const RECT *top_rect, DWORD flags );
  extern void X11DRV_ReleaseDC( HWND hwnd, HDC hdc );
-@@ -414,6 +415,7 @@ struct x11drv_thread_data
+@@ -425,6 +426,7 @@ struct x11drv_thread_data
      Atom    *net_supported;        /* list of _NET_SUPPORTED atoms */
      int      net_supported_count;  /* number of _NET_SUPPORTED atoms */
      UINT     net_wm_state_mask;    /* mask of supported _NET_WM_STATE *bits */
 +    char    *window_manager;       /* name of the supporting window manager */
  #ifdef HAVE_X11_EXTENSIONS_XINPUT2_H
-     XIValuatorClassInfo x_valuator;
-     XIValuatorClassInfo y_valuator;
-@@ -503,6 +505,7 @@ enum x11drv_atoms
+     unsigned char       root_mask[XIMaskLen(XI_LASTEVENT)];
+     XIEventMask         root_events;
+@@ -518,6 +520,7 @@ enum x11drv_atoms
      XATOM_WM_PROTOCOLS,
      XATOM_WM_DELETE_WINDOW,
      XATOM_WM_HINTS,
@@ -137,7 +137,7 @@ index b150e97ad8a..60b14269b38 100644
      XATOM_WM_NORMAL_HINTS,
      XATOM_WM_STATE,
      XATOM_WM_TAKE_FOCUS,
-@@ -515,6 +518,7 @@ enum x11drv_atoms
+@@ -530,6 +533,7 @@ enum x11drv_atoms
      XATOM__NET_STARTUP_INFO_BEGIN,
      XATOM__NET_STARTUP_INFO,
      XATOM__NET_SUPPORTED,
@@ -145,7 +145,7 @@ index b150e97ad8a..60b14269b38 100644
      XATOM__NET_SYSTEM_TRAY_OPCODE,
      XATOM__NET_SYSTEM_TRAY_S0,
      XATOM__NET_SYSTEM_TRAY_VISUAL,
-@@ -720,6 +724,7 @@ extern Window get_net_active_window( Display *display );
+@@ -736,6 +740,7 @@ extern Window get_net_active_window( Display *display );
  extern void net_active_window_notify( unsigned long serial, Window window, Time time );
  extern void net_active_window_init( struct x11drv_thread_data *data );
  extern void net_supported_init( struct x11drv_thread_data *data );
@@ -154,7 +154,7 @@ index b150e97ad8a..60b14269b38 100644
  
  extern Window init_clip_window(void);
 diff --git a/dlls/winex11.drv/x11drv_main.c b/dlls/winex11.drv/x11drv_main.c
-index 595d8b0a628..f2d6382883c 100644
+index aec403ea197..ee819396eb2 100644
 --- a/dlls/winex11.drv/x11drv_main.c
 +++ b/dlls/winex11.drv/x11drv_main.c
 @@ -121,6 +121,7 @@ const char * const X11DRV_atom_names[NB_XATOMS - FIRST_XATOM] =
@@ -189,6 +189,7 @@ index 595d8b0a628..f2d6382883c 100644
      net_active_window_init( data );
  
      return data;
+
 -- 
 2.54.0
 

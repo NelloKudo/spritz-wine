@@ -63,8 +63,9 @@ jobs:
         id: extract_version
         run: |
           TAG="${{ github.ref_name }}"
-          VERSION=$(echo "$TAG" | sed -n 's/^wine-tkg-aagl-\(v[0-9]\+\.[0-9]\+-[0-9]\+\)$/\1/p')
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          VERSION="${TAG#spritz-wine-}"
+          VERSION="${VERSION#v}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2.2.1

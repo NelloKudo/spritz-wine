@@ -1,0 +1,67 @@
+From 4dd6e1293aec5ae230c5f8fff6c1bc319b412820 Mon Sep 17 00:00:00 2001
+From: mkrsym1 <mkrsym1@gmail.com>
+Date: Thu, 17 Sep 2026 18:14:37 +0200
+Subject: [PATCH 1/5] ntoskrnl.exe: Call DriverInit with bits 48-64 of return
+ address set.
+
+App: Goddess of Victory: NIKKE.
+---
+ dlls/ntoskrnl.exe/instr.c    |  9 +++++++++
+ dlls/ntoskrnl.exe/ntoskrnl.c | 13 +++++++++++++
+ 2 files changed, 22 insertions(+)
+
+diff --git a/dlls/ntoskrnl.exe/instr.c b/dlls/ntoskrnl.exe/instr.c
+index 31e1e6e28a4..6985cf3accf 100644
+--- a/dlls/ntoskrnl.exe/instr.c
++++ b/dlls/ntoskrnl.exe/instr.c
+@@ -922,6 +922,15 @@ LONG CALLBACK vectored_handler( EXCEPTION_POINTERS *ptrs )
+     EXCEPTION_RECORD *record = ptrs->ExceptionRecord;
+     CONTEXT *context = ptrs->ContextRecord;
+ 
++    /* kernelmode rip */
++    if (record->ExceptionCode == EXCEPTION_ACCESS_VIOLATION && (context->Rip & 0x0000800000000000))
++    {
++        TRACE( "converting kernelmode rip=%Ix\n", context->Rip );
++        context->Rip &= 0x00007FFFFFFFFFFF;
++        TRACE( "resuming on rip=%Ix\n", context->Rip );
++        return EXCEPTION_CONTINUE_EXECUTION;
++    }
++
+     if (record->ExceptionCode == EXCEPTION_PRIV_INSTRUCTION ||
+         (record->ExceptionCode == EXCEPTION_ACCESS_VIOLATION &&
+          record->ExceptionInformation[0] == EXCEPTION_READ_FAULT))
+diff --git a/dlls/ntoskrnl.exe/ntoskrnl.c b/dlls/ntoskrnl.exe/ntoskrnl.c
+index b4058c07ac3..83e1c2cd417 100644
+--- a/dlls/ntoskrnl.exe/ntoskrnl.c
++++ b/dlls/ntoskrnl.exe/ntoskrnl.c
+@@ -4373,6 +4373,15 @@ static HMODULE load_driver( const WCHAR *driver_name, const UNICODE_STRING *keyn
+     return module;
+ }
+ 
++#if defined(__x86_64__) && !defined(__arm64ec__)
++static NTSTATUS __attribute__((naked)) call_driver_init( struct _DRIVER_OBJECT *driver, PUNICODE_STRING keyname, void *init )
++{
++    asm( "movq $0xFFFF800000000000,%r9\n\t"
++         "orq %r9,(%rsp)\n\t" 
++         "jmpq *%r8\n\t" );
++}
++#endif
++
+ /* call the driver init entry point */
+ static NTSTATUS WINAPI init_driver( DRIVER_OBJECT *driver_object, UNICODE_STRING *keyname )
+ {
+@@ -4401,7 +4410,11 @@ static NTSTATUS WINAPI init_driver( DRIVER_OBJECT *driver_object, UNICODE_STRING
+     TRACE_(relay)( "\1Call driver init %p (obj=%p,str=%s)\n",
+                    driver_object->DriverInit, driver_object, wine_dbgstr_w(keyname->Buffer) );
+ 
++#if defined(__x86_64__) && !defined(__arm64ec__)
++    status = call_driver_init( driver_object, keyname, driver_object->DriverInit );
++#else
+     status = driver_object->DriverInit( driver_object, keyname );
++#endif
+ 
+     TRACE_(relay)( "\1Ret  driver init %p (obj=%p,str=%s) retval=%08lx\n",
+                    driver_object->DriverInit, driver_object, wine_dbgstr_w(keyname->Buffer), status );
+-- 
+2.56.0
+

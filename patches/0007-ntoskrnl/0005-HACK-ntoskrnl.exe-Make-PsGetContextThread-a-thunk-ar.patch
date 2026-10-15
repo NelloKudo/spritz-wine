@@ -1,0 +1,57 @@
+From 9f0dcf7e7c001adef30b64523c5dcd4acf258eff Mon Sep 17 00:00:00 2001
+From: shxrrydw <sherrydrv@gmail.com>
+Date: Fri, 18 Sep 2026 17:19:58 +0200
+Subject: [PATCH 5/5] HACK: ntoskrnl.exe: Make PsGetContextThread a thunk
+ around a helper.
+
+App: Goddess of Victory: NIKKE.
+---
+ dlls/ntoskrnl.exe/ntoskrnl.c | 25 +++++++++++++++++++++----
+ 1 file changed, 21 insertions(+), 4 deletions(-)
+
+diff --git a/dlls/ntoskrnl.exe/ntoskrnl.c b/dlls/ntoskrnl.exe/ntoskrnl.c
+index 086f29eb013..65a65cb3c98 100644
+--- a/dlls/ntoskrnl.exe/ntoskrnl.c
++++ b/dlls/ntoskrnl.exe/ntoskrnl.c
+@@ -2838,10 +2838,7 @@ HANDLE WINAPI PsGetThreadProcessId( PETHREAD thread )
+     return thread->kthread.id.UniqueProcess;
+ }
+ 
+-/*********************************************************************
+- *           PsGetContextThread    (NTOSKRNL.@)
+- */
+-NTSTATUS WINAPI PsGetContextThread(PETHREAD thread, CONTEXT *context, KPROCESSOR_MODE mode)
++NTSTATUS WINAPI get_context_thread( PETHREAD thread, CONTEXT *context, KPROCESSOR_MODE mode )
+ {
+     NTSTATUS status;
+     HANDLE h;
+@@ -2863,6 +2860,26 @@ NTSTATUS WINAPI PsGetContextThread(PETHREAD thread, CONTEXT *context, KPROCESSOR
+     return status;
+ }
+ 
++/*********************************************************************
++ *           PsGetContextThread    (NTOSKRNL.@)
++ */
++#ifdef __x86_64__
++__ASM_GLOBAL_FUNC( PsGetContextThread,
++                   "subq $0x28,%rsp\n\t"
++                   __ASM_SEH(".seh_stackalloc 0x28\n\t")
++                   __ASM_SEH(".seh_endprologue\n\t")
++                   __ASM_CFI(".cfi_adjust_cfa_offset 0x28\n\t")
++                   "call " __ASM_NAME("get_context_thread") "\n\t"
++                   "addq $0x28,%rsp\n\t"
++                   __ASM_CFI(".cfi_adjust_cfa_offset -0x28\n\t")
++                   "ret" )
++#else
++NTSTATUS WINAPI PsGetContextThread( PETHREAD thread, CONTEXT *context, KPROCESSOR_MODE mode )
++{
++    return get_context_thread( thread, context, mode );
++}
++#endif
++
+ /***********************************************************************
+  *           KeInsertQueue   (NTOSKRNL.EXE.@)
+  */
+-- 
+2.56.0
+

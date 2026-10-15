@@ -1,0 +1,55 @@
+From e5d02d8fd42def3718f5ea90d5d43bf8ba7e7a3c Mon Sep 17 00:00:00 2001
+From: Etaash Mathamsetty
+ <45927311+Etaash-mathamsetty@users.noreply.github.com>
+Date: Wed, 5 Aug 2026 18:24:18 -0400
+Subject: [PATCH] winewayland: Use WM_WINE_UPDATEWINDOWSTATE to update window
+ state.
+
+Avoids deadlocks
+---
+ dlls/winewayland.drv/wayland_surface.c | 15 ++-------------
+ 1 file changed, 2 insertions(+), 13 deletions(-)
+
+diff --git a/dlls/winewayland.drv/wayland_surface.c b/dlls/winewayland.drv/wayland_surface.c
+index 5f93d6e56d7..39508a8c6af 100644
+--- a/dlls/winewayland.drv/wayland_surface.c
++++ b/dlls/winewayland.drv/wayland_surface.c
+@@ -136,16 +136,6 @@ void color_management_init(void)
+     TRACE("Initialized image descriptors, scRGB %p BT.2100 %p\n", scrgb_desc, bt2100_desc);
+ }
+ 
+-/* rountrip through WindowPosChanged to refresh the host window state */
+-static void update_window_state(HWND hwnd)
+-{
+-    static const UINT swp_flags = SWP_NOSIZE | SWP_NOMOVE | SWP_NOCLIENTSIZE | SWP_NOCLIENTMOVE |
+-                                  SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOREDRAW;
+-    static const RECT rect;
+-
+-    NtUserSetRawWindowPos(hwnd, rect, swp_flags, FALSE);
+-}
+-
+ static void xdg_surface_handle_configure(void *private, struct xdg_surface *xdg_surface,
+                                          uint32_t serial)
+ {
+@@ -307,8 +297,7 @@ static void xdg_popup_handle_done(void *private, struct xdg_popup *xdg_popup)
+     }
+     wayland_win_data_release(data);
+ 
+-    update_window_state(hwnd);
+-    NtUserExposeWindowSurface(hwnd, 0, NULL);
++    NtUserPostMessage(hwnd, WM_WINE_UPDATEWINDOWSTATE, 0, 0);
+ }
+ 
+ static void xdg_popup_handle_reposition(void *private, struct xdg_popup *xdg_popup, uint32_t token)
+@@ -350,7 +339,7 @@ void wp_fractional_scale_handle_scale(void* user_data,
+     wayland_win_data_release(data);
+ 
+     NtUserExposeWindowSurface(hwnd, 0, NULL);
+-    update_window_state(hwnd);
++    NtUserPostMessage(hwnd, WM_WINE_UPDATEWINDOWSTATE, 0, 0);
+ }
+ 
+ static const struct wp_fractional_scale_v1_listener wp_fractional_scale_listener =
+-- 
+2.56.0
+

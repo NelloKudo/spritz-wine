@@ -1,0 +1,104 @@
+From 46fb9406f08f746fe75c865c861362831ec752b9 Mon Sep 17 00:00:00 2001
+From: Etaash Mathamsetty
+ <45927311+Etaash-mathamsetty@users.noreply.github.com>
+Date: Sat, 10 Oct 2026 02:00:20 -0500
+Subject: [PATCH] winewayland: Implement updating of activation tokens.
+
+---
+ dlls/winewayland.drv/wayland_keyboard.c |  2 ++
+ dlls/winewayland.drv/wayland_pointer.c  |  1 +
+ dlls/winewayland.drv/wayland_surface.c  | 17 +++++++++++++----
+ dlls/winewayland.drv/waylanddrv.h       |  1 +
+ 4 files changed, 17 insertions(+), 4 deletions(-)
+
+diff --git a/dlls/winewayland.drv/wayland_keyboard.c b/dlls/winewayland.drv/wayland_keyboard.c
+index d177e064145..a9eee2bf071 100644
+--- a/dlls/winewayland.drv/wayland_keyboard.c
++++ b/dlls/winewayland.drv/wayland_keyboard.c
+@@ -975,6 +975,7 @@ static void keyboard_handle_enter(void *private, struct wl_keyboard *wl_keyboard
+ 
+     NtUserPostMessage(hwnd, WM_INPUTLANGCHANGEREQUEST, 0 /*FIXME*/, (LPARAM)keyboard_hkl);
+     NtUserPostMessage(hwnd, WM_WINE_WINDOW_STATE_CHANGED, 0, 0);
++    wayland_refresh_activation_token(hwnd);
+ }
+ 
+ static BOOL wayland_disable_focus_loss(void)
+@@ -1131,6 +1132,7 @@ static void keyboard_handle_key(void *data, struct wl_keyboard *wl_keyboard,
+     if (state == WL_KEYBOARD_KEY_STATE_RELEASED) input.ki.dwFlags |= KEYEVENTF_KEYUP;
+     NtUserSendHardwareInput(hwnd, 0, &input, 0);
+     update_keystate(key, state);
++    wayland_refresh_activation_token(hwnd);
+ }
+ 
+ static void keyboard_handle_modifiers(void *data, struct wl_keyboard *wl_keyboard,
+diff --git a/dlls/winewayland.drv/wayland_pointer.c b/dlls/winewayland.drv/wayland_pointer.c
+index 197626ef753..4b0a3322a4c 100644
+--- a/dlls/winewayland.drv/wayland_pointer.c
++++ b/dlls/winewayland.drv/wayland_pointer.c
+@@ -286,6 +286,7 @@ static void pointer_handle_button(void *data, struct wl_pointer *wl_pointer,
+     TRACE("hwnd=%p button=%#x state=%u\n", hwnd, button, state);
+ 
+     NtUserSendHardwareInput(hwnd, SEND_HWMSG_RAWINPUT, &input, 0);
++    wayland_refresh_activation_token(hwnd);
+ }
+ 
+ static void pointer_handle_axis(void *user_data, struct wl_pointer *wl_pointer,
+diff --git a/dlls/winewayland.drv/wayland_surface.c b/dlls/winewayland.drv/wayland_surface.c
+index b07e3bdb155..8eb917367e1 100644
+--- a/dlls/winewayland.drv/wayland_surface.c
++++ b/dlls/winewayland.drv/wayland_surface.c
+@@ -2171,26 +2171,35 @@ void wayland_surface_flash_window(struct wayland_surface *surface)
+     xdg_activation_token_v1_commit(token);
+ }
+ 
+-void wayland_surface_refresh_token(struct wayland_surface *surface)
++void wayland_refresh_activation_token(HWND hwnd)
+ {
++    struct wayland_win_data *data;
++    struct wayland_surface *surface;
+     struct xdg_activation_token_v1 *token;
+ 
+     if (!process_wayland.xdg_activation_v1) return;
+-    if (!wayland_surface_is_toplevel(surface)) return;
++    if (!(data = wayland_win_data_get(hwnd))) return;
++    if (!(surface = data->wayland_surface) || !wayland_surface_is_toplevel(surface))
++        goto done;
+ 
+-    if (!(token = wayland_surface_create_token(surface, TRUE))) return;
++    if (!(token = wayland_surface_create_token(surface, TRUE))) goto done;
+     xdg_activation_token_v1_add_listener(token, &save_token_listener, NULL);
+     xdg_activation_token_v1_commit(token);
++
++done:
++    wayland_win_data_release(data);
+ }
+ 
+ void wayland_surface_activate(struct wayland_surface *surface)
+ {
+     struct xdg_activation_token_v1 *token;
+-    char *token_str = InterlockedExchangePointer((void **)&process_activate_token, NULL);
++    char *token_str;
+ 
+     if (!process_wayland.xdg_activation_v1) return;
+     if (!wayland_surface_is_toplevel(surface)) return;
+ 
++    token_str = InterlockedExchangePointer((void **)&process_activate_token, NULL);
++
+     if (token_str)
+     {
+         xdg_activation_v1_activate(process_wayland.xdg_activation_v1, token_str, surface->wl_surface);
+diff --git a/dlls/winewayland.drv/waylanddrv.h b/dlls/winewayland.drv/waylanddrv.h
+index 0056edf11ee..859cdf2115b 100644
+--- a/dlls/winewayland.drv/waylanddrv.h
++++ b/dlls/winewayland.drv/waylanddrv.h
+@@ -543,6 +543,7 @@ struct wayland_client_surface *get_client_surface(HWND hwnd);
+ void set_client_surface(HWND hwnd, struct wayland_client_surface *client);
+ BOOL set_window_surface_contents(HWND hwnd, struct wayland_shm_buffer *shm_buffer, HRGN damage_region);
+ struct wayland_shm_buffer *get_window_surface_contents(HWND hwnd);
++void wayland_refresh_activation_token(HWND hwnd);
+ void wayland_window_init(void);
+ BOOL wayland_is_overlay_active(void);
+ 
+-- 
+2.56.0
+

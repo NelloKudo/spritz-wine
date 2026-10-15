@@ -1,0 +1,135 @@
+From c919f891d7be1c4bf63099a269f8111ff77f17f8 Mon Sep 17 00:00:00 2001
+From: Etaash Mathamsetty
+ <45927311+Etaash-mathamsetty@users.noreply.github.com>
+Date: Wed, 9 Sep 2026 19:35:24 -0500
+Subject: [PATCH] winewayland: Add support for steam overlay event.
+
+Now that the GE steam overlay vulkan layer exists this is a simple addition to allow it to be useable with proton's winewayland
+---
+ dlls/winewayland.drv/display.c          |  5 -----
+ dlls/winewayland.drv/wayland.c          | 27 +++++++++++++++++++++++++
+ dlls/winewayland.drv/wayland_keyboard.c |  1 +
+ dlls/winewayland.drv/wayland_pointer.c  |  1 +
+ dlls/winewayland.drv/waylanddrv.h       |  7 +++++++
+ 5 files changed, 36 insertions(+), 5 deletions(-)
+
+diff --git a/dlls/winewayland.drv/display.c b/dlls/winewayland.drv/display.c
+index 5f79a43ff75..f6a198329ac 100644
+--- a/dlls/winewayland.drv/display.c
++++ b/dlls/winewayland.drv/display.c
+@@ -271,11 +271,6 @@ static void wayland_add_device_source(const struct gdi_device_manager *device_ma
+     device_manager->add_source(output->name, state_flags, dpi, param);
+ }
+ 
+-static inline void ascii_to_unicode(WCHAR *dst, const char *src, int len)
+-{
+-    while (len-- && *src) *dst++ = (unsigned char)*src++;
+-}
+-
+ static void wayland_add_device_monitor(const struct gdi_device_manager *device_manager,
+                                        void *param, struct wayland_output_state *output,
+                                        struct wayland_output_state *primary)
+diff --git a/dlls/winewayland.drv/wayland.c b/dlls/winewayland.drv/wayland.c
+index 3bf25262352..ccbb217ead3 100644
+--- a/dlls/winewayland.drv/wayland.c
++++ b/dlls/winewayland.drv/wayland.c
+@@ -95,6 +95,30 @@ static const struct wl_seat_listener seat_listener =
+     wl_seat_handle_name
+ };
+ 
++static void init_overlay_event(void)
++{
++    OBJECT_ATTRIBUTES attr;
++    WCHAR buffer[MAX_PATH] = {0};
++    char path[MAX_PATH];
++    UNICODE_STRING str;
++
++    RtlInitUnicodeString( &str, buffer );
++    str.MaximumLength = sizeof(buffer);
++    InitializeObjectAttributes( &attr, &str, OBJ_CASE_INSENSITIVE | OBJ_OPENIF, 0, NULL );
++
++    str.Length = sprintf( path, "\\Sessions\\%u\\BaseNamedObjects\\__wine_steamclient_GameOverlayActivated",
++                          (int)RtlGetCurrentPeb()->SessionId );
++    ascii_to_unicode( buffer, path, str.Length + 1 );
++    str.Length *= sizeof(WCHAR);
++    NtCreateEvent( &process_wayland.overlay_event, EVENT_ALL_ACCESS, &attr, NotificationEvent, FALSE );
++}
++
++BOOL wayland_is_overlay_active(void)
++{
++    LARGE_INTEGER timeout = {0};
++    return NtWaitForSingleObject(process_wayland.overlay_event, FALSE, &timeout) == WAIT_OBJECT_0;
++}
++
+ static int wayland_disable_ssd(void)
+ {
+     static int disabled = -1;
+@@ -385,6 +409,9 @@ BOOL wayland_process_init(void)
+         return FALSE;
+     }
+ 
++    init_overlay_event();
++
++    /* initialize win data mutex */
+     wayland_window_init();
+     wl_array_init(&process_wayland.output_array);
+ 
+diff --git a/dlls/winewayland.drv/wayland_keyboard.c b/dlls/winewayland.drv/wayland_keyboard.c
+index dfffe770249..d177e064145 100644
+--- a/dlls/winewayland.drv/wayland_keyboard.c
++++ b/dlls/winewayland.drv/wayland_keyboard.c
+@@ -1113,6 +1113,7 @@ static void keyboard_handle_key(void *data, struct wl_keyboard *wl_keyboard,
+     InterlockedExchange(&process_wayland.input_serial, serial);
+ 
+     if (!(hwnd = wayland_keyboard_get_focused_hwnd())) return;
++    if (wayland_is_overlay_active()) return;
+ 
+     TRACE_(key)("serial=%u hwnd=%p key=%d scan=%#x state=%#x\n", serial, hwnd, key, scan, state);
+ 
+diff --git a/dlls/winewayland.drv/wayland_pointer.c b/dlls/winewayland.drv/wayland_pointer.c
+index 94c7ae6e5b9..aeb302a05fd 100644
+--- a/dlls/winewayland.drv/wayland_pointer.c
++++ b/dlls/winewayland.drv/wayland_pointer.c
+@@ -254,6 +254,7 @@ static void pointer_handle_button(void *data, struct wl_pointer *wl_pointer,
+     InterlockedExchange(&process_wayland.input_serial, serial);
+ 
+     if (!(hwnd = wayland_pointer_get_focused_hwnd())) return;
++    if (wayland_is_overlay_active()) return;
+ 
+     input.type = INPUT_MOUSE;
+ 
+diff --git a/dlls/winewayland.drv/waylanddrv.h b/dlls/winewayland.drv/waylanddrv.h
+index 42a1a81fef6..0056edf11ee 100644
+--- a/dlls/winewayland.drv/waylanddrv.h
++++ b/dlls/winewayland.drv/waylanddrv.h
+@@ -267,6 +267,7 @@ struct wayland
+     BOOL supports_pq;
+     BOOL supports_scrgb;
+     BOOL supports_extended_volume;
++    HANDLE overlay_event;
+ };
+ 
+ struct wayland_output_mode
+@@ -543,6 +544,7 @@ void set_client_surface(HWND hwnd, struct wayland_client_surface *client);
+ BOOL set_window_surface_contents(HWND hwnd, struct wayland_shm_buffer *shm_buffer, HRGN damage_region);
+ struct wayland_shm_buffer *get_window_surface_contents(HWND hwnd);
+ void wayland_window_init(void);
++BOOL wayland_is_overlay_active(void);
+ 
+ /**********************************************************************
+  *          Wayland Keyboard
+@@ -611,6 +613,11 @@ static inline BOOL is_decoration_enabled(DWORD style, DWORD ex_style)
+     return FALSE;
+ }
+ 
++static inline void ascii_to_unicode(WCHAR *dst, const char *src, int len)
++{
++    while (len-- && *src) *dst++ = (unsigned char)*src++;
++}
++
+ RGNDATA *get_region_data(HRGN region);
+ 
+ /**********************************************************************
+-- 
+2.56.0
+

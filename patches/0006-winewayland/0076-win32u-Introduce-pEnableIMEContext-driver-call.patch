@@ -1,0 +1,117 @@
+From 1da5e1e849d12887ef2b556287ceac22abf29263 Mon Sep 17 00:00:00 2001
+From: Etaash Mathamsetty
+ <45927311+Etaash-mathamsetty@users.noreply.github.com>
+Date: Mon, 3 Aug 2026 11:53:23 -0400
+Subject: [PATCH] win32u: Introduce pEnableIMEContext driver call.
+
+Based on a patch by Ziia Shi.
+---
+ dlls/win32u/driver.c      | 11 +++++++++++
+ dlls/win32u/imm.c         |  9 ++++++++-
+ include/wine/gdi_driver.h |  1 +
+ 3 files changed, 20 insertions(+), 1 deletion(-)
+
+diff --git a/dlls/win32u/driver.c b/dlls/win32u/driver.c
+index 326dacbfdfd..e2000aa0b4d 100644
+--- a/dlls/win32u/driver.c
++++ b/dlls/win32u/driver.c
+@@ -683,6 +683,10 @@ static BOOL nulldrv_SetIMECompositionRect( HWND hwnd, RECT rect )
+     return FALSE;
+ }
+ 
++static void nulldrv_EnableIMEContext( HWND hwnd, BOOL enabled )
++{
++}
++
+ static LRESULT nulldrv_DesktopWindowProc( HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam )
+ {
+     return default_window_proc( hwnd, msg, wparam, lparam, FALSE );
+@@ -1146,6 +1150,11 @@ static BOOL loaderdrv_SetIMECompositionRect( HWND hwnd, RECT rect )
+     return load_driver()->pSetIMECompositionRect( hwnd, rect );
+ }
+ 
++static void loaderdrv_EnableIMEContext( HWND hwnd, BOOL enabled )
++{
++    return load_driver()->pEnableIMEContext( hwnd, enabled );
++}
++
+ static LONG loaderdrv_ChangeDisplaySettings( LPDEVMODEW displays, LPCWSTR primary_name, HWND hwnd,
+                                              DWORD flags, LPVOID lparam )
+ {
+@@ -1296,6 +1305,7 @@ static const struct user_driver_funcs lazy_load_driver =
+     loaderdrv_ImeToAsciiEx,
+     loaderdrv_NotifyIMEStatus,
+     loaderdrv_SetIMECompositionRect,
++    loaderdrv_EnableIMEContext,
+     /* cursor/icon functions */
+     nulldrv_DestroyCursorIcon,
+     loaderdrv_SetCursor,
+@@ -1402,6 +1412,7 @@ void __wine_set_user_driver( const struct user_driver_funcs *funcs, UINT version
+     SET_USER_FUNC(ImeToAsciiEx);
+     SET_USER_FUNC(NotifyIMEStatus);
+     SET_USER_FUNC(SetIMECompositionRect);
++    SET_USER_FUNC(EnableIMEContext);
+     SET_USER_FUNC(DestroyCursorIcon);
+     SET_USER_FUNC(SetCursor);
+     SET_USER_FUNC(GetCursorPos);
+diff --git a/dlls/win32u/imm.c b/dlls/win32u/imm.c
+index 28acfe8bc24..71b3d2be42c 100644
+--- a/dlls/win32u/imm.c
++++ b/dlls/win32u/imm.c
+@@ -182,6 +182,7 @@ UINT WINAPI NtUserAssociateInputContext( HWND hwnd, HIMC ctx, ULONG flags )
+ {
+     WND *win;
+     UINT ret = AICR_OK;
++    HIMC old;
+ 
+     TRACE( "%p %p %x\n", hwnd, ctx, flags );
+ 
+@@ -210,12 +211,14 @@ UINT WINAPI NtUserAssociateInputContext( HWND hwnd, HIMC ctx, ULONG flags )
+     if (ctx && !is_current_thread_window( hwnd )) return AICR_FAILED;
+     if (!(win = get_win_ptr( hwnd )) || win == WND_OTHER_PROCESS || win == WND_DESKTOP) return AICR_FAILED;
+ 
+-    if (flags != IACE_IGNORENOCONTEXT || win->imc)
++    if ((old = win->imc) || flags != IACE_IGNORENOCONTEXT)
+     {
+         if (win->imc != ctx && get_focus() == hwnd) ret = AICR_FOCUS_CHANGED;
+         win->imc = ctx;
+     }
+ 
++    if (!old ^ !win->imc) user_driver->pEnableIMEContext( hwnd, !!win->imc );
++
+     release_win_ptr( win );
+     return ret;
+ }
+@@ -308,6 +311,8 @@ BOOL register_imm_window( HWND hwnd )
+                                                           0, 0, 1, 1, 0, 0, 0, 0, 0, 0, NULL, FALSE );
+     }
+ 
++    user_driver->pEnableIMEContext( hwnd, TRUE );
++
+     return TRUE;
+ }
+ 
+@@ -331,6 +336,8 @@ void unregister_imm_window( HWND hwnd )
+         HWND destroy_hwnd = detach_default_window( thread_data );
+         if (destroy_hwnd) NtUserDestroyWindow( destroy_hwnd );
+     }
++
++    user_driver->pEnableIMEContext( hwnd, FALSE );
+ }
+ 
+ /***********************************************************************
+diff --git a/include/wine/gdi_driver.h b/include/wine/gdi_driver.h
+index 4bbc80c169c..270add6b8b5 100644
+--- a/include/wine/gdi_driver.h
++++ b/include/wine/gdi_driver.h
+@@ -385,6 +385,7 @@ struct user_driver_funcs
+     UINT    (*pImeToAsciiEx)(UINT,UINT,const BYTE*,void *);
+     void    (*pNotifyIMEStatus)(HWND,UINT);
+     BOOL    (*pSetIMECompositionRect)(HWND,RECT);
++    void    (*pEnableIMEContext)(HWND, BOOL);
+     /* cursor/icon functions */
+     void    (*pDestroyCursorIcon)(HCURSOR);
+     void    (*pSetCursor)(HWND,HCURSOR);
+-- 
+2.56.0
+

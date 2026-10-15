@@ -1,0 +1,139 @@
+From 592b68c130c11ef87126ff0d76963f927793681a Mon Sep 17 00:00:00 2001
+From: Etaash Mathamsetty
+ <45927311+Etaash-mathamsetty@users.noreply.github.com>
+Date: Sat, 18 Jul 2026 02:21:38 -0400
+Subject: [PATCH] HACK: winewayland: Implement OpenGL throttling.
+
+Works around driver limitations.
+---
+ dlls/win32u/opengl.c                   | 11 ++++++-
+ dlls/winewayland.drv/opengl.c          | 41 ++++++++++++++++++++++++--
+ dlls/winewayland.drv/wayland_surface.c |  4 +++
+ dlls/winewayland.drv/waylanddrv.h      |  2 ++
+ 4 files changed, 55 insertions(+), 3 deletions(-)
+
+diff --git a/dlls/win32u/opengl.c b/dlls/win32u/opengl.c
+index 5267f75b711..8073e92c7d9 100644
+--- a/dlls/win32u/opengl.c
++++ b/dlls/win32u/opengl.c
+@@ -1540,10 +1540,19 @@ static BOOL egldrv_context_activate( struct opengl_context *context, struct open
+ {
+     const struct opengl_funcs *funcs = &display_funcs;
+     const struct egl_platform *egl = &display_egl;
++    BOOL ret;
+ 
+     TRACE( "context %p, draw %s, read %s\n", context, debugstr_opengl_drawable( draw ), debugstr_opengl_drawable( read ) );
+ 
+-    return funcs->p_eglMakeCurrent( egl->display, draw ? draw->surface : EGL_NO_SURFACE, read ? read->surface : EGL_NO_SURFACE, context->host_context );
++    ret = funcs->p_eglMakeCurrent( egl->display, draw ? draw->surface : EGL_NO_SURFACE, read ? read->surface : EGL_NO_SURFACE, context->host_context );
++    if (ret && draw && draw->surface != EGL_NO_SURFACE && egl->display && egl->type == EGL_PLATFORM_WAYLAND_KHR)
++    {
++        /* HACK: set swap interval to 0 for the wayland platform,
++         * winewayland implements swap interval=1 instead of the GPU driver. */
++        ERR("HACK: Using swap interval 0\n");
++        funcs->p_eglSwapInterval( egl->display, 0 );
++    }
++    return ret;
+ }
+ 
+ static void egldrv_pbuffer_destroy( struct opengl_drawable *drawable )
+diff --git a/dlls/winewayland.drv/opengl.c b/dlls/winewayland.drv/opengl.c
+index b9d56f8c9ea..e9de0a4d133 100644
+--- a/dlls/winewayland.drv/opengl.c
++++ b/dlls/winewayland.drv/opengl.c
+@@ -104,6 +104,8 @@ static BOOL wayland_opengl_surface_create(struct client_surface *client, int for
+     opengl_drawable_map_buffer(&gl->base, GL_FRONT_AND_BACK, GL_BACK);
+     if (gl->base.stereo) opengl_drawable_map_buffer(&gl->base, GL_FRONT_RIGHT, GL_BACK_RIGHT);
+ 
++    if (!surface->throttle) NtCreateEvent(&surface->throttle, EVENT_ALL_ACCESS, NULL, SynchronizationEvent, TRUE);
++
+     if (!(gl->wl_egl_window = wl_egl_window_create(surface->wl_surface, size.cx, size.cy))) goto err;
+     if (!(gl->base.surface = funcs->p_eglCreateWindowSurface(egl->display, config, gl->wl_egl_window, attribs))) goto err;
+     set_client_surface(hwnd, surface);
+@@ -133,18 +135,53 @@ static void wayland_drawable_flush(struct opengl_drawable *base, UINT flags)
+ 
+     TRACE("drawable %s, flags %#x\n", debugstr_opengl_drawable(base), flags);
+ 
+-    if (flags & GL_FLUSH_INTERVAL) funcs->p_eglSwapInterval(egl->display, abs(base->interval));
+-
+     /* Since context_flush is called from operations that may latch the native size,
+      * perform any pending resizes before calling them. */
+     if (flags & GL_FLUSH_UPDATED) wl_egl_window_resize(gl->wl_egl_window, size.cx, size.cy, 0, 0);
+ }
+ 
++static void wayland_gl_frame_done(void *data, struct wl_callback *wl_callback, uint32_t callback_data)
++{
++    struct client_surface *client = data;
++    struct wayland_client_surface *surface = impl_from_client_surface(client);
++
++    if (surface->wl_callback != wl_callback) return;
++
++    TRACE("hwnd=%p\n", client->hwnd);
++
++    surface->wl_callback = NULL;
++    if (surface->throttle) NtSetEvent(surface->throttle, NULL);
++}
++
++static const struct wl_callback_listener gl_throttle_listener =
++{
++    wayland_gl_frame_done,
++};
++
+ static BOOL wayland_drawable_swap(struct opengl_drawable *base)
+ {
+     struct wayland_gl_drawable *gl = impl_from_opengl_drawable(base);
++    struct wayland_client_surface *surface = impl_from_client_surface(base->client);
+ 
+     client_surface_present(base->client);
++    if (base->interval && surface->toplevel)
++    {
++        /* 1 second, relative */
++        const LARGE_INTEGER timeout = { .QuadPart = -10000 * 1000 };
++        NTSTATUS status;
++
++        if (surface->throttle)
++        {
++            status = NtWaitForSingleObject(surface->throttle, FALSE, &timeout);
++            if (status == STATUS_TIMEOUT) WARN("Present timed out!\n");
++        }
++       /* Currently, EGL is implemented using frame callbacks, so replicate that here.
++        * although it would be better to use fifo + commit timing
++        * (that way swap interval > 1 can be implemented),
++        * that's not something easily done from the wine side. */
++        surface->wl_callback = wl_surface_frame(surface->wl_surface);
++        wl_callback_add_listener(surface->wl_callback, &gl_throttle_listener, base->client);
++    }
+     funcs->p_eglSwapBuffers(egl->display, gl->base.surface);
+ 
+     return TRUE;
+diff --git a/dlls/winewayland.drv/wayland_surface.c b/dlls/winewayland.drv/wayland_surface.c
+index e5f7823a3d5..c0ffc790021 100644
+--- a/dlls/winewayland.drv/wayland_surface.c
++++ b/dlls/winewayland.drv/wayland_surface.c
+@@ -1481,6 +1481,10 @@ static void wayland_client_surface_destroy(struct client_surface *client)
+ 
+     TRACE("%s\n", debugstr_client_surface(client));
+ 
++    if (surface->wl_callback)
++        wl_callback_destroy(surface->wl_callback);
++    if (surface->throttle)
++        NtClose(surface->throttle);
+     if (surface->color_management)
+         wp_color_management_surface_v1_destroy(surface->color_management);
+     if (surface->wp_content_type_v1)
+diff --git a/dlls/winewayland.drv/waylanddrv.h b/dlls/winewayland.drv/waylanddrv.h
+index 022ee00cded..ec2d84c1d19 100644
+--- a/dlls/winewayland.drv/waylanddrv.h
++++ b/dlls/winewayland.drv/waylanddrv.h
+@@ -364,6 +364,8 @@ struct wayland_client_surface
+     struct client_surface client;
+     HWND toplevel;
+     RECT rect;
++    HANDLE throttle;
++    struct wl_callback *wl_callback;
+     struct wl_surface *wl_surface;
+     struct wl_subsurface *wl_subsurface;
+     struct wp_viewport *wp_viewport;
+-- 
+2.56.0
+

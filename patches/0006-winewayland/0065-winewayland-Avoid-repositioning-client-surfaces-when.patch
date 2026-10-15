@@ -1,0 +1,110 @@
+From 10145b360d3f62332d95205824369f9f434075a0 Mon Sep 17 00:00:00 2001
+From: Etaash Mathamsetty
+ <45927311+Etaash-mathamsetty@users.noreply.github.com>
+Date: Tue, 21 Jul 2026 18:37:03 -0400
+Subject: [PATCH] winewayland: Avoid repositioning client surfaces when
+ unnecessary.
+
+See mahkoh(slash)jay(slash)issues(slash)1124#issuecomment-5039483751
+---
+ dlls/winewayland.drv/wayland_surface.c | 28 ++++++++++++++++++--------
+ dlls/winewayland.drv/waylanddrv.h      |  1 +
+ 2 files changed, 21 insertions(+), 8 deletions(-)
+
+diff --git a/dlls/winewayland.drv/wayland_surface.c b/dlls/winewayland.drv/wayland_surface.c
+index ff04ccad1d9..5f93d6e56d7 100644
+--- a/dlls/winewayland.drv/wayland_surface.c
++++ b/dlls/winewayland.drv/wayland_surface.c
+@@ -1045,7 +1045,7 @@ static void wayland_surface_reconfigure_size(struct wayland_surface *surface,
+  *
+  * Reconfigures the subsurface covering the client area.
+  */
+-static void wayland_surface_reconfigure_client(struct wayland_surface *surface,
++static BOOL wayland_surface_reconfigure_client(struct wayland_surface *surface,
+                                                struct wayland_client_surface *client,
+                                                const RECT *client_rect)
+ {
+@@ -1056,18 +1056,19 @@ static void wayland_surface_reconfigure_client(struct wayland_surface *surface,
+ 
+     TRACE("hwnd=%p rect=%s\n", surface->hwnd, wine_dbgstr_rect(&rect));
+ 
++    if (client_rect) client->rect = *client_rect;
++    if (EqualRect(&rect, &client->viewport_rect)) return FALSE;
++    client->viewport_rect = rect;
++
+     if (client->wl_subsurface)
+-    {
+         wl_subsurface_set_position(client->wl_subsurface, rect.left, rect.top);
+-        wl_subsurface_place_above(client->wl_subsurface, surface->wl_surface);
+-    }
+ 
+     if (rect.left != rect.right && rect.top != rect.bottom)
+         wp_viewport_set_destination(client->wp_viewport, rect.right - rect.left, rect.bottom - rect.top);
+     else /* We can't have a 0x0 destination, use 1x1 instead. */
+         wp_viewport_set_destination(client->wp_viewport, 1, 1);
+ 
+-    client->rect = *client_rect;
++    return TRUE;
+ }
+ 
+ /**********************************************************************
+@@ -1786,6 +1787,8 @@ struct client_surface *WAYLAND_CreateClientSurface(HWND hwnd, int pixel_format,
+         }
+     }
+ 
++    SetRect(&client->viewport_rect, -INT32_MAX, 0, -INT32_MAX, 0);
++
+     return &client->client;
+ 
+ err:
+@@ -1806,6 +1809,7 @@ void wayland_client_surface_attach(struct wayland_client_surface *client, HWND t
+             client->wl_subsurface = NULL;
+         }
+ 
++        SetRect(&client->viewport_rect, -INT32_MAX, 0, -INT32_MAX, 0);
+         client->toplevel = 0;
+         return;
+     }
+@@ -1826,6 +1830,12 @@ void wayland_client_surface_attach(struct wayland_client_surface *client, HWND t
+                                             surface->wl_surface);
+         if (!client->wl_subsurface) goto done;
+ 
++        /* If the parent wl_surface changes, then the subsurface will be reattached.
++         * So this place_above only need to be done once on attach. If two child windows
++         * are on top of each other then the composition behavior depends on the clip rect
++         * of each window rather than the Z-ordering of the child and parent. */
++        wl_subsurface_place_above(client->wl_subsurface, surface->wl_surface);
++
+         /* Present contents independently of the parent surface. */
+         wl_subsurface_set_desync(client->wl_subsurface);
+ 
+@@ -1834,9 +1844,11 @@ void wayland_client_surface_attach(struct wayland_client_surface *client, HWND t
+         TRACE("Created subsurface for toplevel=%p\n", toplevel);
+     }
+ 
+-    wayland_surface_reconfigure_client(surface, client, rect);
+-    /* Commit to apply subsurface positioning. */
+-    wl_surface_commit(surface->wl_surface);
++    if (wayland_surface_reconfigure_client(surface, client, rect))
++    {
++        /* Commit to apply subsurface positioning. */
++        wl_surface_commit(surface->wl_surface);
++    }
+ 
+ done:
+     wayland_win_data_release(toplevel_data);
+diff --git a/dlls/winewayland.drv/waylanddrv.h b/dlls/winewayland.drv/waylanddrv.h
+index 1bac72bb665..475cc06a034 100644
+--- a/dlls/winewayland.drv/waylanddrv.h
++++ b/dlls/winewayland.drv/waylanddrv.h
+@@ -366,6 +366,7 @@ struct wayland_client_surface
+     HWND toplevel;
+     RECT rect;
+     HANDLE throttle;
++    RECT viewport_rect;
+     struct wl_callback *wl_callback;
+     struct wl_surface *wl_surface;
+     struct wl_subsurface *wl_subsurface;
+-- 
+2.56.0
+

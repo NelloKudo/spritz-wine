@@ -1,0 +1,52 @@
+From 175ff7200655c6b524d9c127b93f4be5791cf0e6 Mon Sep 17 00:00:00 2001
+From: Etaash Mathamsetty <45927311+BananaWorks07@users.noreply.github.com>
+Date: Wed, 2 Sep 2026 00:22:43 -0500
+Subject: [PATCH] winewayland: Add some comments.
+
+we are so back!
+---
+ dlls/winewayland.drv/waylanddrv.h | 2 ++
+ dlls/winewayland.drv/window.c     | 6 +++---
+ 2 files changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/dlls/winewayland.drv/waylanddrv.h b/dlls/winewayland.drv/waylanddrv.h
+index 827530be678..eb41d044f2a 100644
+--- a/dlls/winewayland.drv/waylanddrv.h
++++ b/dlls/winewayland.drv/waylanddrv.h
+@@ -421,6 +421,8 @@ struct wayland_surface
+ 
+     struct wayland_surface_config pending, requested, processing, current;
+     BOOL resizing;
++    /* TODO: We can remove this once FSHack is implemented in opengl and vulkan upstream for all drivers.
++     * The opengl implementation is already merged. Then we would only need to ensure contents via expose. */
+     enum wayland_surface_ensure_type ensured_contents;
+     struct wayland_window_config window, comitted;
+     int content_width, content_height;
+diff --git a/dlls/winewayland.drv/window.c b/dlls/winewayland.drv/window.c
+index e14b8359e9f..f8ef09cb713 100644
+--- a/dlls/winewayland.drv/window.c
++++ b/dlls/winewayland.drv/window.c
+@@ -542,9 +542,9 @@ static void wayland_configure_window(HWND hwnd)
+         return;
+     }
+ 
+-    if (!wayland_surface_is_toplevel(surface))
++    if (!surface->xdg_surface)
+     {
+-        TRACE("missing xdg_toplevel, returning\n");
++        TRACE("missing xdg_surface, returning\n");
+         wayland_win_data_release(data);
+         return;
+     }
+@@ -639,7 +639,7 @@ static void wayland_configure_window(HWND hwnd)
+     SetRect(&rect, 0, 0, width, height);
+     OffsetRect(&rect, data->rects.window.left, data->rects.window.top);
+     if (!IsRectEmpty(&rect)) rect = window_rect_from_visible(&data->rects, rect);
+-
++    /* TODO: Move window based on which outputs it is mapped on */
+     wayland_win_data_release(data);
+ 
+     TRACE("hwnd=%p processing=%s,%#x\n", hwnd, wine_dbgstr_rect(&rect), state);
+-- 
+2.56.0
+

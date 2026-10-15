@@ -1,0 +1,27 @@
+From 06d179d01c3c2f8f128e48bdb5cb155edc4a6646 Mon Sep 17 00:00:00 2001
+From: Etaash Mathamsetty
+ <45927311+Etaash-mathamsetty@users.noreply.github.com>
+Date: Fri, 5 Jun 2026 14:18:04 -0400
+Subject: [PATCH] winewayland: Fix formatting issues.
+
+---
+ dlls/winewayland.drv/window.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/dlls/winewayland.drv/window.c b/dlls/winewayland.drv/window.c
+index 402b1251074..76ccad3d7fa 100644
+--- a/dlls/winewayland.drv/window.c
++++ b/dlls/winewayland.drv/window.c
+@@ -693,8 +693,7 @@ void WAYLAND_SetWindowIcons(HWND hwnd, HICON icon, const ICONINFO *ii, HICON ico
+             {
+                 wayland_surface_set_icon_buffer(surface, ICON_BIG, ii);
+                 if (icon_small) wayland_surface_set_icon_buffer(surface, ICON_SMALL, ii_small);
+-                if (wayland_surface_is_toplevel(surface))
+-                    wayland_surface_assign_icon(surface);
++                if (wayland_surface_is_toplevel(surface)) wayland_surface_assign_icon(surface);
+             }
+             wayland_win_data_release(data);
+         }
+-- 
+2.56.0
+

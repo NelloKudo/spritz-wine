@@ -1,0 +1,302 @@
+From 7897ae0959bbcb6b34587c796b3dee2bc39443da Mon Sep 17 00:00:00 2001
+From: Etaash Mathamsetty
+ <45927311+Etaash-mathamsetty@users.noreply.github.com>
+Date: Mon, 18 May 2026 23:59:14 -0400
+Subject: [PATCH] HACK: winewayland/opengl: Implement tearing with 0 swap
+ interval.
+
+---
+ dlls/winewayland.drv/Makefile.in            |   1 +
+ dlls/winewayland.drv/opengl.c               |   4 +
+ dlls/winewayland.drv/tearing-control-v1.xml | 122 ++++++++++++++++++++
+ dlls/winewayland.drv/wayland.c              |  21 ++++
+ dlls/winewayland.drv/wayland_surface.c      |  27 +++++
+ dlls/winewayland.drv/waylanddrv.h           |   4 +
+ 6 files changed, 179 insertions(+)
+ create mode 100644 dlls/winewayland.drv/tearing-control-v1.xml
+
+diff --git a/dlls/winewayland.drv/Makefile.in b/dlls/winewayland.drv/Makefile.in
+index 9233ad1743d..c71f12e56ae 100644
+--- a/dlls/winewayland.drv/Makefile.in
++++ b/dlls/winewayland.drv/Makefile.in
+@@ -20,6 +20,7 @@ SOURCES = \
+ 	pointer-constraints-unstable-v1.xml \
+ 	pointer-warp-v1.xml \
+ 	relative-pointer-unstable-v1.xml \
++	tearing-control-v1.xml \
+ 	text-input-unstable-v3.xml \
+ 	viewporter.xml \
+ 	vulkan.c \
+diff --git a/dlls/winewayland.drv/opengl.c b/dlls/winewayland.drv/opengl.c
+index e9de0a4d133..6349b50fede 100644
+--- a/dlls/winewayland.drv/opengl.c
++++ b/dlls/winewayland.drv/opengl.c
+@@ -61,6 +61,7 @@ static void wayland_drawable_destroy(struct opengl_drawable *base)
+ {
+     struct wayland_gl_drawable *gl = impl_from_opengl_drawable(base);
+     if (gl->wl_egl_window) wl_egl_window_destroy(gl->wl_egl_window);
++    wayland_client_surface_set_tearing_hint(base->client, FALSE);
+ }
+ 
+ static EGLConfig egl_config_for_format(int format)
+@@ -135,6 +136,9 @@ static void wayland_drawable_flush(struct opengl_drawable *base, UINT flags)
+ 
+     TRACE("drawable %s, flags %#x\n", debugstr_opengl_drawable(base), flags);
+ 
++    /* swap interval is handled by winewayland throttling, only update the tearing hint */
++    if (flags & GL_FLUSH_INTERVAL) wayland_client_surface_set_tearing_hint(base->client, !base->interval);
++
+     /* Since context_flush is called from operations that may latch the native size,
+      * perform any pending resizes before calling them. */
+     if (flags & GL_FLUSH_UPDATED) wl_egl_window_resize(gl->wl_egl_window, size.cx, size.cy, 0, 0);
+diff --git a/dlls/winewayland.drv/tearing-control-v1.xml b/dlls/winewayland.drv/tearing-control-v1.xml
+new file mode 100644
+index 00000000000..bc2d84db545
+--- /dev/null
++++ b/dlls/winewayland.drv/tearing-control-v1.xml
+@@ -0,0 +1,122 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<protocol name="tearing_control_v1">
++  <copyright>
++    Copyright © 2021 Xaver Hugl
++
++    Permission is hereby granted, free of charge, to any person obtaining a
++    copy of this software and associated documentation files (the "Software"),
++    to deal in the Software without restriction, including without limitation
++    the rights to use, copy, modify, merge, publish, distribute, sublicense,
++    and/or sell copies of the Software, and to permit persons to whom the
++    Software is furnished to do so, subject to the following conditions:
++
++    The above copyright notice and this permission notice (including the next
++    paragraph) shall be included in all copies or substantial portions of the
++    Software.
++
++    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
++    THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
++    DEALINGS IN THE SOFTWARE.
++  </copyright>
++
++  <interface name="wp_tearing_control_manager_v1" version="1">
++    <description summary="protocol for tearing control">
++      For some use cases like games or drawing tablets it can make sense to
++      reduce latency by accepting tearing with the use of asynchronous page
++      flips. This global is a factory interface, allowing clients to inform
++      which type of presentation the content of their surfaces is suitable for.
++
++      Graphics APIs like EGL or Vulkan, that manage the buffer queue and commits
++      of a wl_surface themselves, are likely to be using this extension
++      internally. If a client is using such an API for a wl_surface, it should
++      not directly use this extension on that surface, to avoid raising a
++      tearing_control_exists protocol error.
++
++      Warning! The protocol described in this file is currently in the testing
++      phase. Backward compatible changes may be added together with the
++      corresponding interface version bump. Backward incompatible changes can
++      only be done by creating a new major version of the extension.
++    </description>
++
++    <request name="destroy" type="destructor">
++      <description summary="destroy tearing control factory object">
++        Destroy this tearing control factory object. Other objects, including
++        wp_tearing_control_v1 objects created by this factory, are not affected
++        by this request.
++      </description>
++    </request>
++
++    <enum name="error">
++      <entry name="tearing_control_exists" value="0"
++             summary="the surface already has a tearing object associated"/>
++    </enum>
++
++    <request name="get_tearing_control">
++      <description summary="extend surface interface for tearing control">
++        Instantiate an interface extension for the given wl_surface to request
++        asynchronous page flips for presentation.
++
++        If the given wl_surface already has a wp_tearing_control_v1 object
++        associated, the tearing_control_exists protocol error is raised.
++      </description>
++      <arg name="id" type="new_id" interface="wp_tearing_control_v1"/>
++      <arg name="surface" type="object" interface="wl_surface"/>
++    </request>
++  </interface>
++
++  <interface name="wp_tearing_control_v1" version="1">
++    <description summary="per-surface tearing control interface">
++      An additional interface to a wl_surface object, which allows the client
++      to hint to the compositor if the content on the surface is suitable for
++      presentation with tearing.
++      The default presentation hint is vsync. See presentation_hint for more
++      details.
++
++      If the associated wl_surface is destroyed, this object becomes inert and
++      should be destroyed.
++    </description>
++
++    <enum name="presentation_hint">
++      <description summary="presentation hint values">
++        This enum provides information for if submitted frames from the client
++        may be presented with tearing.
++      </description>
++      <entry name="vsync" value="0">
++        <description summary="tearing-free presentation">
++          The content of this surface is meant to be synchronized to the
++          vertical blanking period. This should not result in visible tearing
++          and may result in a delay before a surface commit is presented.
++        </description>
++      </entry>
++      <entry name="async" value="1">
++        <description summary="asynchronous presentation">
++          The content of this surface is meant to be presented with minimal
++          latency and tearing is acceptable.
++        </description>
++      </entry>
++    </enum>
++
++    <request name="set_presentation_hint">
++      <description summary="set presentation hint">
++        Set the presentation hint for the associated wl_surface. This state is
++        double-buffered, see wl_surface.commit.
++
++        The compositor is free to dynamically respect or ignore this hint based
++        on various conditions like hardware capabilities, surface state and
++        user preferences.
++      </description>
++      <arg name="hint" type="uint" enum="presentation_hint"/>
++    </request>
++
++    <request name="destroy" type="destructor">
++      <description summary="destroy tearing control object and revert to vsync">
++        Destroy this tearing control object and revert the presentation hint to
++        vsync. The change will be applied on the next wl_surface.commit.
++      </description>
++    </request>
++  </interface>
++</protocol>
+diff --git a/dlls/winewayland.drv/wayland.c b/dlls/winewayland.drv/wayland.c
+index ca3ec742c8c..b71b109ef52 100644
+--- a/dlls/winewayland.drv/wayland.c
++++ b/dlls/winewayland.drv/wayland.c
+@@ -130,6 +130,21 @@ static int wayland_disable_ssd(void)
+     return disabled;
+ }
+ 
++/* HACK: Mesa doesn't support tearing on EGL */
++static int use_egl_tearing(void)
++{
++    static int enabled = -1;
++    const char *env;
++
++    if (enabled == -1)
++    {
++        enabled = (env = getenv("WAYLANDDRV_EGL_TEARING")) &&
++                    !strcmp(env, "1");
++    }
++
++    return enabled;
++}
++
+ static int wayland_use_ime(void)
+ {
+     static int enabled = -1;
+@@ -315,6 +330,12 @@ static void registry_handle_global(void *data, struct wl_registry *registry,
+         process_wayland.xdg_activation_v1 =
+             wl_registry_bind(registry, id, &xdg_activation_v1_interface, 1);
+     }
++    else if (strcmp(interface, "wp_tearing_control_manager_v1") == 0)
++    {
++        if (use_egl_tearing())
++            process_wayland.wp_tearing_control_manager_v1 =
++                wl_registry_bind(registry, id, &wp_tearing_control_manager_v1_interface, 1);
++    }
+     else if (strcmp(interface, "zwp_keyboard_shortcuts_inhibit_manager_v1") == 0)
+     {
+         process_wayland.zwp_keyboard_shortcuts_inhibit_manager_v1 =
+diff --git a/dlls/winewayland.drv/wayland_surface.c b/dlls/winewayland.drv/wayland_surface.c
+index 8eb917367e1..281bb6ea7c2 100644
+--- a/dlls/winewayland.drv/wayland_surface.c
++++ b/dlls/winewayland.drv/wayland_surface.c
+@@ -1545,6 +1545,8 @@ static void wayland_client_surface_destroy(struct client_surface *client)
+         wp_color_management_surface_v1_destroy(surface->color_management);
+     if (surface->wp_content_type_v1)
+         wp_content_type_v1_destroy(surface->wp_content_type_v1);
++    if (surface->wp_tearing_control_v1)
++        wp_tearing_control_v1_destroy(surface->wp_tearing_control_v1);
+     if (surface->wp_viewport)
+         wp_viewport_destroy(surface->wp_viewport);
+     if (surface->wl_subsurface)
+@@ -1850,6 +1852,31 @@ void set_client_surface(HWND hwnd, struct wayland_client_surface *new_client)
+     wayland_win_data_release(data);
+ }
+ 
++void wayland_client_surface_set_tearing_hint(struct client_surface *client, BOOL tear)
++{
++    struct wayland_client_surface *surface;
++
++    if (!client || !process_wayland.wp_tearing_control_manager_v1) return;
++    surface = impl_from_client_surface(client);
++
++    TRACE("client=%s tearing=%u\n", debugstr_client_surface(client), tear);
++
++    if (tear && !surface->wp_tearing_control_v1)
++    {
++        surface->wp_tearing_control_v1 =
++            wp_tearing_control_manager_v1_get_tearing_control(
++                process_wayland.wp_tearing_control_manager_v1, surface->wl_surface);
++        wp_tearing_control_v1_set_presentation_hint(
++            surface->wp_tearing_control_v1,
++            WP_TEARING_CONTROL_V1_PRESENTATION_HINT_ASYNC);
++    }
++    else if (!tear && surface->wp_tearing_control_v1)
++    {
++        wp_tearing_control_v1_destroy(surface->wp_tearing_control_v1);
++        surface->wp_tearing_control_v1 = NULL;
++    }
++}
++
+ static const struct client_surface_funcs wayland_client_surface_funcs =
+ {
+     .size = sizeof(struct wayland_client_surface),
+diff --git a/dlls/winewayland.drv/waylanddrv.h b/dlls/winewayland.drv/waylanddrv.h
+index 859cdf2115b..7780274e830 100644
+--- a/dlls/winewayland.drv/waylanddrv.h
++++ b/dlls/winewayland.drv/waylanddrv.h
+@@ -52,6 +52,7 @@ struct xkb_compose_table;
+ #include "content-type-v1-client-protocol.h"
+ #include "xdg-decoration-unstable-v1-client-protocol.h"
+ #include "xdg-activation-v1-client-protocol.h"
++#include "tearing-control-v1-client-protocol.h"
+ #include "keyboard-shortcuts-inhibit-unstable-v1-client-protocol.h"
+ 
+ #include "windef.h"
+@@ -250,6 +251,7 @@ struct wayland
+     struct wp_content_type_manager_v1 *wp_content_type_manager_v1;
+     struct zxdg_decoration_manager_v1 *zxdg_decoration_manager_v1;
+     struct xdg_activation_v1 *xdg_activation_v1;
++    struct wp_tearing_control_manager_v1 *wp_tearing_control_manager_v1;
+     struct zwp_keyboard_shortcuts_inhibit_manager_v1* zwp_keyboard_shortcuts_inhibit_manager_v1;
+     struct wayland_seat seat;
+     struct wayland_keyboard keyboard;
+@@ -370,6 +372,7 @@ struct wayland_client_surface
+     struct wp_viewport *wp_viewport;
+     struct wp_color_management_surface_v1 *color_management;
+     struct wp_content_type_v1 *wp_content_type_v1;
++    struct wp_tearing_control_v1 *wp_tearing_control_v1;
+ };
+ 
+ extern struct wayland_client_surface *impl_from_client_surface(struct client_surface *client);
+@@ -481,6 +484,7 @@ POINT map_point_to_surface(struct wayland_surface *surface, POINT point);
+ RECT map_rect_from_surface(struct wayland_surface *surface, RECT rect);
+ POINT map_point_from_surface(struct wayland_surface *surface, POINT point);
+ void wayland_client_surface_attach(struct wayland_client_surface *client, HWND toplevel, const RECT *rect);
++void wayland_client_surface_set_tearing_hint(struct client_surface *client, BOOL tear);
+ void wayland_surface_set_title(struct wayland_surface *surface, LPCWSTR title);
+ void wayland_surface_assign_icon(struct wayland_surface *surface);
+ void wayland_surface_set_icon_buffer(struct wayland_surface *surface, UINT type, const ICONINFO *ii);
+-- 
+2.56.0
+

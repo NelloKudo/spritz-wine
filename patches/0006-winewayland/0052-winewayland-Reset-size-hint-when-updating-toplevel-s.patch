@@ -1,0 +1,27 @@
+From 8df2d77d8d860cdd491c84929db6860fec5b1a7a Mon Sep 17 00:00:00 2001
+From: panhui <panhui@uniontech.com>
+Date: Mon, 13 Jul 2026 23:25:07 -0400
+Subject: [PATCH] winewayland: Reset size hint when updating toplevel state.
+
+---
+ dlls/winewayland.drv/window.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/dlls/winewayland.drv/window.c b/dlls/winewayland.drv/window.c
+index 9105e4c03f9..5bec509baa2 100644
+--- a/dlls/winewayland.drv/window.c
++++ b/dlls/winewayland.drv/window.c
+@@ -333,6 +333,10 @@ static void wayland_surface_update_state_toplevel(struct wayland_surface *surfac
+         {
+             xdg_toplevel_set_minimized(surface->xdg_toplevel);
+         }
++
++        /* reset the size hint since we don't want to poison the next configure event with it */
++        xdg_toplevel_set_min_size(surface->xdg_toplevel, 0, 0);
++        xdg_toplevel_set_max_size(surface->xdg_toplevel, 0, 0);
+     }
+     else
+     {
+-- 
+2.56.0
+

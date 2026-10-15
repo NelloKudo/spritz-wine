@@ -1,0 +1,24 @@
+From e7076df0c353b6aba6bf9a413d97ae8ae577eafe Mon Sep 17 00:00:00 2001
+From: Etaash Mathamsetty <45927311+BananaWorks07@users.noreply.github.com>
+Date: Wed, 9 Sep 2026 12:41:14 -0500
+Subject: [PATCH] winewayland: Fix German qwerty scan2vk.
+
+---
+ dlls/winewayland.drv/wayland_keyboard.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/dlls/winewayland.drv/wayland_keyboard.c b/dlls/winewayland.drv/wayland_keyboard.c
+index 385991e71f0..dfffe770249 100644
+--- a/dlls/winewayland.drv/wayland_keyboard.c
++++ b/dlls/winewayland.drv/wayland_keyboard.c
+@@ -543,6 +543,7 @@ static void add_xkb_layout(const char *xkb_layout, struct xkb_keymap *xkb_keymap
+     case MAKELANGID(LANG_GERMAN, SUBLANG_GERMAN_SWISS): scan2vk = scan2vk_qwertz; break;
+     default: scan2vk = scan2vk_qwerty; break;
+     }
++    if (strstr(xkb_layout, "qwerty")) scan2vk = scan2vk_qwerty;
+     if (strstr(xkb_layout, "dvorak")) scan2vk = scan2vk_dvorak;
+ 
+     layout->tables.pKeyNames = layout->key_names;
+-- 
+2.56.0
+

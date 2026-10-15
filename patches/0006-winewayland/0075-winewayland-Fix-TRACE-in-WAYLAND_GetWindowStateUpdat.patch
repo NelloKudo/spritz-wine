@@ -1,0 +1,26 @@
+From 1dd3d1179a4586f029ccd0cef4be82fb7f526671 Mon Sep 17 00:00:00 2001
+From: Etaash Mathamsetty
+ <45927311+Etaash-mathamsetty@users.noreply.github.com>
+Date: Mon, 3 Aug 2026 12:07:15 -0400
+Subject: [PATCH] winewayland: Fix TRACE in WAYLAND_GetWindowStateUpdates.
+
+---
+ dlls/winewayland.drv/window.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/dlls/winewayland.drv/window.c b/dlls/winewayland.drv/window.c
+index 432578092e8..8d3bcde0dd8 100644
+--- a/dlls/winewayland.drv/window.c
++++ b/dlls/winewayland.drv/window.c
+@@ -982,7 +982,7 @@ BOOL WAYLAND_GetWindowStateUpdates(HWND hwnd, UINT *state_cmd, UINT *swp_flags,
+     if ((style & WS_MINIMIZE) && focused_hwnd == hwnd && old_foreground != hwnd)
+         *state_cmd = MAKELONG(SC_RESTORE, 1);
+ 
+-    TRACE("hwnd=%p foreground=%p state_low=%#x\n", hwnd, *foreground, LOWORD(*state_cmd));
++    TRACE("hwnd=%p foreground=%p state=%#x\n", hwnd, *foreground, *state_cmd);
+ 
+     return TRUE;
+ }
+-- 
+2.56.0
+

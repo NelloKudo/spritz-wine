@@ -1,0 +1,76 @@
+From 58be631f364766bae3bf87fea7e1d730521ccaee Mon Sep 17 00:00:00 2001
+From: Etaash Mathamsetty
+ <45927311+Etaash-mathamsetty@users.noreply.github.com>
+Date: Thu, 8 Oct 2026 06:28:05 -0500
+Subject: [PATCH] fixup! winewayland: Fix wayland_output_remove
+
+how the hell did I not see this lmao...
+---
+ dlls/winewayland.drv/wayland.c        |  1 +
+ dlls/winewayland.drv/wayland_output.c | 28 +++++++++++++--------------
+ 2 files changed, 14 insertions(+), 15 deletions(-)
+
+diff --git a/dlls/winewayland.drv/wayland.c b/dlls/winewayland.drv/wayland.c
+index ccbb217ead3..ca3ec742c8c 100644
+--- a/dlls/winewayland.drv/wayland.c
++++ b/dlls/winewayland.drv/wayland.c
+@@ -342,6 +342,7 @@ static void registry_handle_global_remove(void *data, struct wl_registry *regist
+         {
+             TRACE("removing output->name=%s\n", (*output)->current.name);
+             wayland_output_remove(output);
++            pthread_mutex_unlock(&process_wayland.output_mutex);
+             return;
+         }
+     }
+diff --git a/dlls/winewayland.drv/wayland_output.c b/dlls/winewayland.drv/wayland_output.c
+index f38be455426..75c1981f9b5 100644
+--- a/dlls/winewayland.drv/wayland_output.c
++++ b/dlls/winewayland.drv/wayland_output.c
+@@ -28,6 +28,7 @@
+ 
+ #include "wine/debug.h"
+ 
++#include <assert.h>
+ #include <stdlib.h>
+ #include <unistd.h>
+ 
+@@ -664,24 +665,21 @@ static void wayland_output_state_deinit(struct wayland_output_state *state)
+  */
+ void wayland_output_remove(struct wayland_output **output)
+ {
+-    struct wl_array *output_array = &process_wayland.output_array;
+-    struct wayland_output **end, *temp;
++    struct wl_array *array = &process_wayland.output_array;
++    struct wayland_output **end = array->data, *temp;
+ 
+-    pthread_mutex_lock(&process_wayland.output_mutex);
+-    if ((end = output_array->data) && output_array->size)
+-    {
+-        end += (output_array->size / sizeof(*output)) - 1;
+-        /* swap current element and back element */
+-        temp = *end;
+-        *end = *output;
+-        *output = temp;
+-        /* then reduce the size of the array */
+-        output_array->size -= sizeof(*output);
+-    }
++    assert(array->size && end);
++
++    end += (array->size / sizeof(*output)) - 1;
++    /* swap current element and back element */
++    temp = *end;
++    *end = *output;
++    *output = temp;
++    /* then reduce the size of the array */
++    array->size -= sizeof(*output);
+     wayland_output_array_arrange_physical_coords();
+-    pthread_mutex_unlock(&process_wayland.output_mutex);
+ 
+-    wayland_output_release(*output);
++    wayland_output_release(*end);
+ 
+     maybe_init_display_devices();
+ }
+-- 
+2.56.0
+

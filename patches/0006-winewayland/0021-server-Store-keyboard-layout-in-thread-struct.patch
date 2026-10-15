@@ -1,0 +1,95 @@
+From 354b5e2f0980a998ede0d8ce03feea2ee2359836 Mon Sep 17 00:00:00 2001
+From: Etaash Mathamsetty
+ <45927311+Etaash-mathamsetty@users.noreply.github.com>
+Date: Thu, 27 Nov 2025 16:38:54 -0600
+Subject: [PATCH] server: Store keyboard layout in thread struct.
+
+---
+ server/protocol.def | 12 ++++++++++++
+ server/thread.c     |  1 +
+ server/thread.h     |  1 +
+ server/winstation.c | 21 +++++++++++++++++++++
+ 4 files changed, 35 insertions(+)
+
+diff --git a/server/protocol.def b/server/protocol.def
+index f30bb55849b..0e711eaf92a 100644
+--- a/server/protocol.def
++++ b/server/protocol.def
+@@ -3090,6 +3090,18 @@ enum coords_relative
+     obj_handle_t   handle;        /* handle to the desktop */
+ @END
+ 
++/* Get the thread current keyboard layout */
++@REQ(get_thread_layout)
++    thread_id_t tid;              /* thread id */
++@REPLY
++    client_ptr_t layout;          /* keyboard layout HKL */
++@END
++
++/* Set the thread current keyboard layout */
++@REQ(set_thread_layout)
++    thread_id_t tid;              /* thread id */
++    client_ptr_t layout;          /* keyboard layout HKL */
++@END
+ 
+ /* Set the thread current desktop */
+ @REQ(set_thread_desktop)
+diff --git a/server/thread.c b/server/thread.c
+index 7df857d5333..2e99a3b9410 100644
+--- a/server/thread.c
++++ b/server/thread.c
+@@ -380,6 +380,7 @@ static inline void init_thread_structure( struct thread *thread )
+     thread->desc            = NULL;
+     thread->desc_len        = 0;
+     thread->exit_poll       = NULL;
++    thread->layout          = 0;
+ 
+     thread->creation_time = current_time;
+     thread->exit_time     = 0;
+diff --git a/server/thread.h b/server/thread.h
+index b9be67fe6d5..86707f3746c 100644
+--- a/server/thread.h
++++ b/server/thread.h
+@@ -92,6 +92,7 @@ struct thread
+     bool                   dbg_hidden;    /* hidden from debugger */
+     bool                   bypass_proc_suspend; /* will still run if the process is suspended */
+     obj_handle_t           desktop;       /* desktop handle */
++    client_ptr_t           layout;        /* keyboard layout handle */
+     int                    desktop_users; /* number of objects using the thread desktop */
+     timeout_t              creation_time; /* Thread creation time */
+     timeout_t              exit_time;     /* Thread exit time */
+diff --git a/server/winstation.c b/server/winstation.c
+index e2aad1edeb1..3dd174049ee 100644
+--- a/server/winstation.c
++++ b/server/winstation.c
+@@ -812,6 +812,27 @@ DECL_HANDLER(get_thread_desktop)
+     release_object( thread );
+ }
+ 
++/* get the thread current keyboard layout */
++DECL_HANDLER(get_thread_layout)
++{
++    struct thread *thread;
++
++    if (!(thread = get_thread_from_id( req->tid ))) return;
++    reply->layout = thread->layout;
++
++    release_object( thread );
++}
++
++/* set the thread current keyboard layout */
++DECL_HANDLER(set_thread_layout)
++{
++    struct thread *thread;
++
++    if (!(thread = get_thread_from_id( req->tid ))) return;
++    thread->layout = req->layout;
++
++    release_object( thread );
++}
+ 
+ /* set the thread current desktop */
+ DECL_HANDLER(set_thread_desktop)
+-- 
+2.56.0
+

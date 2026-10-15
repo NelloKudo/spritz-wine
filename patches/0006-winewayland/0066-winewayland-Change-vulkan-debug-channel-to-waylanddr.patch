@@ -1,0 +1,26 @@
+From 34c5f89d11e2e2edae483ee4fb263cd81bdc400e Mon Sep 17 00:00:00 2001
+From: Etaash Mathamsetty
+ <45927311+Etaash-mathamsetty@users.noreply.github.com>
+Date: Wed, 22 Jul 2026 04:12:15 -0400
+Subject: [PATCH] winewayland: Change vulkan debug channel to waylanddrv.
+
+---
+ dlls/winewayland.drv/vulkan.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/dlls/winewayland.drv/vulkan.c b/dlls/winewayland.drv/vulkan.c
+index b2c435cb7a4..80dcb4a15ea 100644
+--- a/dlls/winewayland.drv/vulkan.c
++++ b/dlls/winewayland.drv/vulkan.c
+@@ -34,7 +34,7 @@
+ #include "wine/vulkan.h"
+ #include "wine/vulkan_driver.h"
+ 
+-WINE_DEFAULT_DEBUG_CHANNEL(vulkan);
++WINE_DEFAULT_DEBUG_CHANNEL(waylanddrv);
+ 
+ static const struct vulkan_driver_funcs wayland_vulkan_driver_funcs;
+ 
+-- 
+2.56.0
+

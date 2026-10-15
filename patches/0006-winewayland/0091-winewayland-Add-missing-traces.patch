@@ -1,0 +1,44 @@
+From 14df756a18fea01a396d876fdddbafd0ac2b62f3 Mon Sep 17 00:00:00 2001
+From: Etaash Mathamsetty
+ <45927311+Etaash-mathamsetty@users.noreply.github.com>
+Date: Mon, 17 Aug 2026 22:41:40 -0400
+Subject: [PATCH] winewayland: Add missing traces.
+
+---
+ dlls/winewayland.drv/window.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/dlls/winewayland.drv/window.c b/dlls/winewayland.drv/window.c
+index 112eb8814ab..069ad912be0 100644
+--- a/dlls/winewayland.drv/window.c
++++ b/dlls/winewayland.drv/window.c
+@@ -707,6 +707,8 @@ void WAYLAND_SetLayeredWindowAttributes(HWND hwnd, COLORREF key, BYTE alpha, DWO
+     struct wayland_win_data *data;
+     struct wayland_surface *surface;
+ 
++    TRACE("hwnd=%p key=%x alpha=%u flags=%x\n", hwnd, key, alpha, flags);
++
+     if (!(data = wayland_win_data_get(hwnd))) return;
+ 
+     if ((surface = data->wayland_surface))
+@@ -765,6 +767,8 @@ void WAYLAND_SetWindowStyle(HWND hwnd, INT offset, STYLESTRUCT *style)
+     struct wayland_surface *surface;
+     DWORD changed = style->styleNew ^ style->styleOld;
+ 
++    TRACE("hwnd=%p offset=%d\n", hwnd, offset);
++
+     if (hwnd == NtUserGetDesktopWindow()) return;
+     if (!(data = wayland_win_data_get(hwnd))) return;
+ 
+@@ -856,6 +860,8 @@ void WAYLAND_UpdateLayeredWindow(HWND hwnd, BYTE alpha, UINT flags)
+     struct wayland_win_data *data;
+     struct wayland_surface *surface;
+ 
++    TRACE("hwnd=%p alpha=%u flags=%x\n", hwnd, alpha, flags);
++
+     if (!(data = wayland_win_data_get(hwnd))) return;
+ 
+     if ((surface = data->wayland_surface))
+-- 
+2.56.0
+

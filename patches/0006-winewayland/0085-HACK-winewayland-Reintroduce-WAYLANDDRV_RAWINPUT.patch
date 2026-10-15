@@ -1,0 +1,71 @@
+From 7e625de139b3cf9aed85a7e4c065987e9ed3417f Mon Sep 17 00:00:00 2001
+From: Etaash Mathamsetty
+ <45927311+Etaash-mathamsetty@users.noreply.github.com>
+Date: Wed, 12 Aug 2026 00:49:06 -0400
+Subject: [PATCH] HACK: winewayland: Reintroduce WAYLANDDRV_RAWINPUT.
+
+At this point we might as well make our own compositor to avoid these bugs? why do people still need this???
+---
+ dlls/winewayland.drv/wayland_pointer.c | 32 ++++++++++++++++++++++++--
+ 1 file changed, 30 insertions(+), 2 deletions(-)
+
+diff --git a/dlls/winewayland.drv/wayland_pointer.c b/dlls/winewayland.drv/wayland_pointer.c
+index a26f9ddd264..acdce7929dc 100644
+--- a/dlls/winewayland.drv/wayland_pointer.c
++++ b/dlls/winewayland.drv/wayland_pointer.c
+@@ -505,6 +505,25 @@ static void wayland_motion_delta_to_window(struct wayland_surface *surface,
+     *window_y = surface_y * surface->window.scale;
+ }
+ 
++/* Some compositors seem to have broken rawinput so allow users to disable/adjust sensitivity */
++static double get_rawinput_scale(void)
++{
++    static double cached = -1.0;
++    const char *env;
++
++    if (cached != -1.0) return cached;
++
++    cached = 1.0;
++    if ((env = getenv("WAYLANDDRV_RAWINPUT")))
++    {
++        /* an invalid value would return 0, disabling rawinput */
++        cached = strtod(env, NULL);
++        if (cached < 0) cached = 0;
++    }
++
++    return cached;
++}
++
+ static void relative_pointer_v1_relative_motion(void *private,
+                                                 struct zwp_relative_pointer_v1 *zwp_relative_pointer_v1,
+                                                 uint32_t utime_hi, uint32_t utime_lo,
+@@ -515,6 +534,7 @@ static void relative_pointer_v1_relative_motion(void *private,
+     struct wayland_win_data *data;
+     double screen_x = 0.0, screen_y = 0.0;
+     double raw_x = 0.0, raw_y = 0.0;
++    double scale = get_rawinput_scale();
+     struct wayland_pointer *pointer = &process_wayland.pointer;
+     struct wayland_pointer_frame *frame = &pointer->frame;
+ 
+@@ -527,8 +547,16 @@ static void relative_pointer_v1_relative_motion(void *private,
+                                    &screen_x, &screen_y);
+     wayland_win_data_release(data);
+ 
+-    raw_x = wl_fixed_to_double(dx_unaccel);
+-    raw_y = wl_fixed_to_double(dy_unaccel);
++    if (scale > 0.0)
++    {
++        raw_x = wl_fixed_to_double(dx_unaccel) * scale;
++        raw_y = wl_fixed_to_double(dy_unaccel) * scale;
++    }
++    else
++    {
++        raw_x = screen_x;
++        raw_y = screen_y;
++    }
+ 
+     pthread_mutex_lock(&pointer->mutex);
+ 
+-- 
+2.56.0
+

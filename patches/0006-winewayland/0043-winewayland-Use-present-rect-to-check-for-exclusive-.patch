@@ -1,0 +1,153 @@
+From 78a1178aed91fd49ac7687e9806c8e41fc177268 Mon Sep 17 00:00:00 2001
+From: Etaash Mathamsetty
+ <45927311+Etaash-mathamsetty@users.noreply.github.com>
+Date: Thu, 2 Jul 2026 02:22:00 -0400
+Subject: [PATCH] winewayland: Use present rect to check for exclusive
+ fullscreen.
+
+---
+ dlls/winewayland.drv/wayland_surface.c | 50 +++++++++++++++++++++++---
+ dlls/winewayland.drv/window.c          | 30 ----------------
+ 2 files changed, 45 insertions(+), 35 deletions(-)
+
+diff --git a/dlls/winewayland.drv/wayland_surface.c b/dlls/winewayland.drv/wayland_surface.c
+index e15a825cc3e..d9757ccb083 100644
+--- a/dlls/winewayland.drv/wayland_surface.c
++++ b/dlls/winewayland.drv/wayland_surface.c
+@@ -1477,6 +1477,12 @@ static void wayland_client_surface_detach(struct client_surface *client)
+     }
+ }
+ 
++static BOOL is_client_visible(HWND hwnd)
++{
++    RECT dummy;
++    return NtUserIsWindowVisible(hwnd) || NtUserGetPresentRect(hwnd, &dummy, -1);
++}
++
+ static void wayland_client_surface_update(struct client_surface *client)
+ {
+     struct wayland_client_surface *surface = impl_from_client_surface(client);
+@@ -1485,7 +1491,7 @@ static void wayland_client_surface_update(struct client_surface *client)
+     BOOL visible = FALSE;
+ 
+     TRACE("%s\n", debugstr_client_surface(client));
+-    if(toplevel) visible = NtUserIsWindowVisible(hwnd);
++    if (toplevel) visible = is_client_visible(hwnd);
+     if (!(data = wayland_win_data_get(hwnd))) return;
+ 
+     if (toplevel && visible)
+@@ -1514,17 +1520,21 @@ static const struct wl_buffer_listener dummy_buffer_listener =
+  * Ensure that the wayland surface has up-to-date contents, by committing
+  * a dummy buffer if necessary.
+  */
+-static void wayland_surface_ensure_contents(struct wayland_surface *surface, BOOL fullscreen)
++static void wayland_surface_ensure_contents(struct wayland_surface *surface)
+ {
+-    enum wl_shm_format format = fullscreen ? WL_SHM_FORMAT_XRGB8888 : WL_SHM_FORMAT_ARGB8888;
+     enum wayland_surface_ensure_type needs_contents = WAYLAND_SURFACE_NOT_ENSURED;
+     HWND hwnd = surface->hwnd;
+-    const RECT *window = &surface->window.rect;
++    RECT *window = &surface->window.rect, dummy;
+     int width = window->right - window->left;
+     int height = window->bottom - window->top;
++    enum wl_shm_format format;
++    BOOL fullscreen;
+     struct wayland_shm_buffer *dummy_shm_buffer;
+     HRGN damage;
+ 
++    fullscreen = NtUserGetPresentRect(hwnd, &dummy, 0);
++    format = fullscreen ? WL_SHM_FORMAT_XRGB8888 : WL_SHM_FORMAT_ARGB8888;
++
+     /* overwrite the window contents with a transparent buffer for a few reasons:
+      * 1. fullscreen window black background
+      * 2. avoid alpha blending between client surface and toplevel */
+@@ -1587,7 +1597,7 @@ static void wayland_client_surface_present(struct client_surface *client, HDC hd
+ 
+     if ((wayland_surface = data->wayland_surface))
+     {
+-        wayland_surface_ensure_contents(wayland_surface, data->is_fullscreen);
++        wayland_surface_ensure_contents(wayland_surface);
+ 
+         /* Handle any processed configure request, to ensure the related
+          * surface state is applied by the compositor. */
+@@ -1643,6 +1653,36 @@ static BOOL wayland_client_surface_set_color_space(struct client_surface *client
+     return desc || color_space == -1;
+ }
+ 
++void set_client_surface(HWND hwnd, struct wayland_client_surface *new_client)
++{
++    HWND toplevel = new_client->client.toplevel;
++    RECT rect = new_client->client.monitor_rect;
++    struct wayland_client_surface *old_client;
++    struct wayland_win_data *data;
++    BOOL visible = FALSE;
++
++    /* ownership is shared with the callers, the last caller to release
++     * its reference will also destroy it and clear our pointer. */
++    if (toplevel) visible = is_client_visible(hwnd);
++    if (!(data = wayland_win_data_get(hwnd))) return;
++
++    if (new_client != data->client_surface)
++    {
++        if ((old_client = data->client_surface))
++            wayland_client_surface_attach(old_client, NULL, NULL);
++
++        if ((data->client_surface = new_client))
++        {
++            if (toplevel && visible)
++                wayland_client_surface_attach(new_client, toplevel, &rect);
++            else
++                wayland_client_surface_attach(new_client, NULL, NULL);
++        }
++    }
++
++    wayland_win_data_release(data);
++}
++
+ static const struct client_surface_funcs wayland_client_surface_funcs =
+ {
+     .size = sizeof(struct wayland_client_surface),
+diff --git a/dlls/winewayland.drv/window.c b/dlls/winewayland.drv/window.c
+index 33e4d696ae9..81483d57b09 100644
+--- a/dlls/winewayland.drv/window.c
++++ b/dlls/winewayland.drv/window.c
+@@ -943,36 +943,6 @@ BOOL WAYLAND_GetWindowStyleMasks(HWND hwnd, UINT style, UINT ex_style, UINT *sty
+     return ret;
+ }
+ 
+-void set_client_surface(HWND hwnd, struct wayland_client_surface *new_client)
+-{
+-    HWND toplevel = new_client->client.toplevel;
+-    RECT rect = new_client->client.monitor_rect;
+-    struct wayland_client_surface *old_client;
+-    struct wayland_win_data *data;
+-    BOOL visible = FALSE;
+-
+-    /* ownership is shared with the callers, the last caller to release
+-     * its reference will also destroy it and clear our pointer. */
+-    if(toplevel) visible = NtUserIsWindowVisible(hwnd);
+-    if (!(data = wayland_win_data_get(hwnd))) return;
+-
+-    if (new_client != data->client_surface)
+-    {
+-        if ((old_client = data->client_surface))
+-            wayland_client_surface_attach(old_client, NULL, NULL);
+-
+-        if ((data->client_surface = new_client))
+-        {
+-            if (toplevel && visible)
+-                wayland_client_surface_attach(new_client, toplevel, &rect);
+-            else
+-                wayland_client_surface_attach(new_client, NULL, NULL);
+-        }
+-    }
+-
+-    wayland_win_data_release(data);
+-}
+-
+ BOOL set_window_surface_contents(HWND hwnd, struct wayland_shm_buffer *shm_buffer, HRGN damage_region)
+ {
+     struct wayland_surface *wayland_surface;
+-- 
+2.56.0
+

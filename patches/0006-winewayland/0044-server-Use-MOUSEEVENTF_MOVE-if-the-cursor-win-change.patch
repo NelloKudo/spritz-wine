@@ -1,0 +1,26 @@
+From 9965eba840113757b1eb5aa4d5cd956a8ccea7d0 Mon Sep 17 00:00:00 2001
+From: Etaash Mathamsetty <etaash.mathamsetty@gmail.com>
+Date: Wed, 24 Jun 2026 03:48:18 -0400
+Subject: [PATCH] server: Use MOUSEEVENTF_MOVE if the cursor win changes.
+
+---
+ server/queue.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/server/queue.c b/server/queue.c
+index 31ffa67424e..4304f0f2188 100644
+--- a/server/queue.c
++++ b/server/queue.c
+@@ -2245,7 +2245,8 @@ static int queue_mouse_message( struct desktop *desktop, user_handle_t win, cons
+             x = desktop_shm->cursor.x + input->mouse.x;
+             y = desktop_shm->cursor.y + input->mouse.y;
+         }
+-        if (x == desktop_shm->cursor.x && y == desktop_shm->cursor.y)
++        if (x == desktop_shm->cursor.x && y == desktop_shm->cursor.y &&
++            (!win || desktop->cursor_win == win))
+             flags &= ~MOUSEEVENTF_MOVE;
+     }
+     else
+-- 
+2.56.0
+

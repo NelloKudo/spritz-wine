@@ -1,0 +1,66 @@
+From 9471a71d0f4c05c5c9e8dff66001847dc62ef726 Mon Sep 17 00:00:00 2001
+From: Etaash Mathamsetty
+ <45927311+Etaash-mathamsetty@users.noreply.github.com>
+Date: Fri, 17 Apr 2026 00:44:32 -0500
+Subject: [PATCH] winewayland: Introduce WAYLAND_HasWindowManager.
+
+---
+ dlls/winewayland.drv/waylanddrv.h      |  1 +
+ dlls/winewayland.drv/waylanddrv_main.c |  1 +
+ dlls/winewayland.drv/window.c          | 16 ++++++++++++++++
+ 3 files changed, 18 insertions(+)
+
+diff --git a/dlls/winewayland.drv/waylanddrv.h b/dlls/winewayland.drv/waylanddrv.h
+index a82b0b14709..eaa9209c8cf 100644
+--- a/dlls/winewayland.drv/waylanddrv.h
++++ b/dlls/winewayland.drv/waylanddrv.h
+@@ -495,6 +495,7 @@ void WAYLAND_WindowPosChanged(HWND hwnd, HWND insert_after, HWND owner_hint, UIN
+ BOOL WAYLAND_WindowPosChanging(HWND hwnd, UINT swp_flags, BOOL shaped, const struct window_rects *rects);
+ struct client_surface *WAYLAND_CreateClientSurface(HWND hwnd, int pixel_format, BOOL raw);
+ BOOL WAYLAND_CreateWindowSurface(HWND hwnd, BOOL layered, const RECT *surface_rect, struct window_surface **surface);
++BOOL WAYLAND_HasWindowManager(const char *name);
+ UINT WAYLAND_VulkanInit(UINT version, void *vulkan_handle, const struct vulkan_driver_funcs **driver_funcs);
+ UINT WAYLAND_OpenGLInit(UINT version, const struct opengl_funcs *opengl_funcs, const struct opengl_driver_funcs **driver_funcs);
+ 
+diff --git a/dlls/winewayland.drv/waylanddrv_main.c b/dlls/winewayland.drv/waylanddrv_main.c
+index 275a3907f92..12c5d580d53 100644
+--- a/dlls/winewayland.drv/waylanddrv_main.c
++++ b/dlls/winewayland.drv/waylanddrv_main.c
+@@ -55,6 +55,7 @@ static const struct user_driver_funcs waylanddrv_funcs =
+     .pWindowPosChanging = WAYLAND_WindowPosChanging,
+     .pCreateClientSurface = WAYLAND_CreateClientSurface,
+     .pCreateWindowSurface = WAYLAND_CreateWindowSurface,
++    .pHasWindowManager = WAYLAND_HasWindowManager,
+     .pVulkanInit = WAYLAND_VulkanInit,
+     .pOpenGLInit = WAYLAND_OpenGLInit,
+ };
+diff --git a/dlls/winewayland.drv/window.c b/dlls/winewayland.drv/window.c
+index ff44a5768ff..e930bbada8e 100644
+--- a/dlls/winewayland.drv/window.c
++++ b/dlls/winewayland.drv/window.c
+@@ -806,6 +806,22 @@ void WAYLAND_UpdateLayeredWindow(HWND hwnd, BYTE alpha, UINT flags)
+     wayland_win_data_release(data);
+ }
+ 
++/***********************************************************************
++ *          WAYLAND_HasWindowManager
++ */
++BOOL WAYLAND_HasWindowManager(const char *name)
++{
++    static int once;
++    const char *env = getenv("XDG_CURRENT_DESKTOP");
++
++    if (!once++) TRACE("DE: %s\n", debugstr_a(env));
++
++    if (!strcmp("waylanddrv", name)) return TRUE;
++    if (env && !strcmp(env, name)) return TRUE;
++
++    return FALSE;
++}
++
+ void set_client_surface(HWND hwnd, struct wayland_client_surface *new_client)
+ {
+     HWND toplevel = new_client->client.toplevel;
+-- 
+2.56.0
+

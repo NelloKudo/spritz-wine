@@ -1,7 +1,7 @@
-From 0af845e326d9f5e2e995214d670619264210f196 Mon Sep 17 00:00:00 2001
+From ede113c5e9ce4967950a37f3a40204c1e617591f Mon Sep 17 00:00:00 2001
 From: shxrrydw <sherrydrv@gmail.com>
 Date: Thu, 17 Sep 2026 18:47:06 +0200
-Subject: [PATCH 2/5] ntoskrnl.exe: Add MmCopyMemory stub.
+Subject: [PATCH 2/6] ntoskrnl.exe: Add MmCopyMemory stub.
 
 App: Goddess of Victory: NIKKE.
 ---

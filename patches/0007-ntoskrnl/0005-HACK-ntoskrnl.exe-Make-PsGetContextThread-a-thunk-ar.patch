@@ -1,7 +1,7 @@
-From 9f0dcf7e7c001adef30b64523c5dcd4acf258eff Mon Sep 17 00:00:00 2001
+From 33be6009ae8612f563cbaab5505a00d07aa97f9f Mon Sep 17 00:00:00 2001
 From: shxrrydw <sherrydrv@gmail.com>
 Date: Fri, 18 Sep 2026 17:19:58 +0200
-Subject: [PATCH 5/5] HACK: ntoskrnl.exe: Make PsGetContextThread a thunk
+Subject: [PATCH 5/6] HACK: ntoskrnl.exe: Make PsGetContextThread a thunk
  around a helper.
 
 App: Goddess of Victory: NIKKE.

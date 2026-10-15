@@ -1,7 +1,7 @@
-From a62310857b8c12bf127c18788dd2516657dd95ad Mon Sep 17 00:00:00 2001
+From 1552012cfe7452bd02ecb4c9ae921bbd05117c8c Mon Sep 17 00:00:00 2001
 From: shxrrydw <sherrydrv@gmail.com>
 Date: Thu, 17 Sep 2026 18:47:06 +0200
-Subject: [PATCH 3/5] ntoskrnl.exe: Pass only the service name in
+Subject: [PATCH 3/6] ntoskrnl.exe: Pass only the service name in
  DriverExtension->ServiceKeyName.
 
 App: Goddess of Victory: NIKKE.

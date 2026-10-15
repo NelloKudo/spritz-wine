@@ -1,7 +1,7 @@
-From 4dd6e1293aec5ae230c5f8fff6c1bc319b412820 Mon Sep 17 00:00:00 2001
+From 6f074477f3c918b94f4946a20e19ed0bda1e2226 Mon Sep 17 00:00:00 2001
 From: mkrsym1 <mkrsym1@gmail.com>
 Date: Thu, 17 Sep 2026 18:14:37 +0200
-Subject: [PATCH 1/5] ntoskrnl.exe: Call DriverInit with bits 48-64 of return
+Subject: [PATCH 1/6] ntoskrnl.exe: Call DriverInit with bits 48-64 of return
  address set.
 
 App: Goddess of Victory: NIKKE.

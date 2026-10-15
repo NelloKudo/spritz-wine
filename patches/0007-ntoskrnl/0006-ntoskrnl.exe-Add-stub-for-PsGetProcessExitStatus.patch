@@ -1,0 +1,60 @@
+From d84cd9af3ed3f227c66b86b7e1f9d3a21111de09 Mon Sep 17 00:00:00 2001
+From: shxrrydw <sherrydrv@gmail.com>
+Date: Thu, 17 Sep 2026 18:51:37 +0200
+Subject: [PATCH 6/6] ntoskrnl.exe: Add stub for PsGetProcessExitStatus.
+
+App: Goddess of Victory: NIKKE.
+---
+ dlls/ntoskrnl.exe/ntoskrnl.c        | 9 +++++++++
+ dlls/ntoskrnl.exe/ntoskrnl.exe.spec | 2 +-
+ include/ddk/ntddk.h                 | 1 +
+ 3 files changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/dlls/ntoskrnl.exe/ntoskrnl.c b/dlls/ntoskrnl.exe/ntoskrnl.c
+index 65a65cb3c98..1384e22f94d 100644
+--- a/dlls/ntoskrnl.exe/ntoskrnl.c
++++ b/dlls/ntoskrnl.exe/ntoskrnl.c
+@@ -2689,6 +2689,15 @@ HANDLE WINAPI PsGetProcessId(PEPROCESS process)
+     return (HANDLE)process->info.UniqueProcessId;
+ }
+ 
++/*********************************************************************
++ *           PsGetProcessExitStatus    (NTOSKRNL.@)
++ */
++NTSTATUS WINAPI PsGetProcessExitStatus(PEPROCESS process)
++{
++    FIXME( "process %p stub.\n", process );
++    return STATUS_PENDING;
++}
++
+ /*********************************************************************
+  *           PsGetProcessPeb    (NTOSKRNL.@)
+  */
+diff --git a/dlls/ntoskrnl.exe/ntoskrnl.exe.spec b/dlls/ntoskrnl.exe/ntoskrnl.exe.spec
+index ee97d87a94f..c4acedd4112 100644
+--- a/dlls/ntoskrnl.exe/ntoskrnl.exe.spec
++++ b/dlls/ntoskrnl.exe/ntoskrnl.exe.spec
+@@ -927,7 +927,7 @@
+ @ stdcall PsGetProcessCreateTimeQuadPart(ptr)
+ @ stub PsGetProcessDebugPort
+ @ stub PsGetProcessExitProcessCalled
+-@ stub PsGetProcessExitStatus
++@ stdcall PsGetProcessExitStatus(ptr)
+ @ stub PsGetProcessExitTime
+ @ stdcall PsGetProcessId(ptr)
+ @ stdcall PsGetProcessImageFileName(ptr)
+diff --git a/include/ddk/ntddk.h b/include/ddk/ntddk.h
+index 898b0a4f8bd..eddb2430e92 100644
+--- a/include/ddk/ntddk.h
++++ b/include/ddk/ntddk.h
+@@ -297,6 +297,7 @@ PHYSICAL_MEMORY_RANGE * WINAPI MmGetPhysicalMemoryRanges(void);
+ BOOLEAN   WINAPI MmIsAddressValid(void *);
+ NTSTATUS  WINAPI PsGetContextThread(PETHREAD,CONTEXT*,KPROCESSOR_MODE);
+ LONGLONG  WINAPI PsGetProcessCreateTimeQuadPart(PEPROCESS);
++NTSTATUS  WINAPI PsGetProcessExitStatus(PEPROCESS);
+ HANDLE    WINAPI PsGetProcessId(PEPROCESS);
+ const char * WINAPI PsGetProcessImageFileName(PEPROCESS);
+ PEB *     WINAPI PsGetProcessPeb(PEPROCESS);
+-- 
+2.56.0
+

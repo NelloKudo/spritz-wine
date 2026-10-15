@@ -1,7 +1,7 @@
-From 6cf2e590675cff1a231ba5084ffcf807329895e8 Mon Sep 17 00:00:00 2001
+From 19cae4c7d754a78100a2dccbc09b4c0ffdee9793 Mon Sep 17 00:00:00 2001
 From: shxrrydw <sherrydrv@gmail.com>
 Date: Fri, 18 Sep 2026 16:01:33 +0200
-Subject: [PATCH 4/5] HACK: ntoskrnl.exe: Keep section views mapped while a
+Subject: [PATCH 4/6] HACK: ntoskrnl.exe: Keep section views mapped while a
  locked MDL uses them.
 
 App: Goddess of Victory: NIKKE.

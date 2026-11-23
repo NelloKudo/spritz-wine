@@ -1,0 +1,22 @@
+From aa5fc76939a52d568d40ac0207c99c5f48530c3e Mon Sep 17 00:00:00 2001
+From: NelloKudo <marshnelloosu@gmail.com>
+Date: Mon, 23 Nov 2026 12:46:58 +0100
+Subject: [PATCH 16/37] Revert "wine.inf: Add a font replacement for Segoe UI."
+
+This reverts commit d00c739a63432a609979c3882ac3ba26020e9047.
+---
+ loader/wine.inf.in | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/loader/wine.inf.in b/loader/wine.inf.in
+index d4008ce7b6e..d9d4458cb1e 100644
+--- a/loader/wine.inf.in
++++ b/loader/wine.inf.in
+@@ -573,7 +573,6 @@ HKLM,%FontsNT%,"Wingdings (TrueType)",,"wingdings.ttf"
+ HKCU,Software\Wine\Fonts\Replacements,"Palatino Linotype",,"Times New Roman"
+ HKCU,Software\Wine\Fonts\Replacements,"Verdana",,"Times New Roman"
+ HKCU,Software\Wine\Fonts\Replacements,"Segoe UI Semibold",,"Times New Roman"
+-HKCU,Software\Wine\Fonts\Replacements,"Segoe UI",,"Times New Roman"
+ 
+ [MCI]
+ HKLM,%Mci32Str%,"AVIVideo",,"mciavi32.dll"

@@ -1,7 +1,7 @@
-From a0ac40f1c3f41595500c9c8debff962846869d0f Mon Sep 17 00:00:00 2001
+From cd8bf6ae95b602784e7b814a315df75ee795c120 Mon Sep 17 00:00:00 2001
 From: NelloKudo <marshnelloosu@gmail.com>
 Date: Sat, 30 May 2026 20:08:26 +0200
-Subject: [PATCH 6/8] mfsrcsnk: Remove proton-only env. vars, disable winedmo
+Subject: [PATCH 35/37] mfsrcsnk: Remove proton-only env. vars, disable winedmo
  by default.
 
 Can be enabled with WINE_USE_WINEDMO=1.
@@ -10,10 +10,10 @@ Can be enabled with WINE_USE_WINEDMO=1.
  1 file changed, 4 insertions(+), 8 deletions(-)
 
 diff --git a/dlls/mfsrcsnk/media_source.c b/dlls/mfsrcsnk/media_source.c
-index 3afae4e0f6e..79ac70f35e0 100644
+index b2dec36b19e..555c4cc1543 100644
 --- a/dlls/mfsrcsnk/media_source.c
 +++ b/dlls/mfsrcsnk/media_source.c
-@@ -2083,21 +2083,17 @@ static BOOL use_gst_byte_stream_handler(void)
+@@ -2080,21 +2080,17 @@ static BOOL use_gst_byte_stream_handler(void)
  {
      BOOL result;
      DWORD size = sizeof(result);
@@ -39,6 +39,3 @@ index 3afae4e0f6e..79ac70f35e0 100644
  }
  
  static HRESULT WINAPI asf_byte_stream_plugin_factory_CreateInstance(IClassFactory *iface,
--- 
-2.54.0
-

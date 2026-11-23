@@ -1,7 +1,7 @@
-From 9adaebea2265d877e1c064d469d35b9a2f2e7f65 Mon Sep 17 00:00:00 2001
+From 93623397308c69157f747e8da0f0d8612e8f36ed Mon Sep 17 00:00:00 2001
 From: Stelios Tsampas <loathingkernel@gmail.com>
 Date: Mon, 20 Apr 2026 10:34:31 +0300
-Subject: [PATCH 02/14] Revert "icu: Forward function to Unicode library v68."
+Subject: [PATCH 02/37] Revert "icu: Forward function to Unicode library v68."
 
 This reverts commit 99d77fc35dc9d64a2d7196d1738affa7a8ba8332.
 ---
@@ -2075,6 +2075,3 @@ index 2573e120a45..6e1d3763cfb 100644
 +#@ stub utrans_transIncrementalUChars
 +#@ stub utrans_transUChars
 +#@ stub utrans_unregisterID
--- 
-2.54.0
-

@@ -1,7 +1,7 @@
-From cd38fca556ca3bab75ba2d908dcf0fb62f5d1052 Mon Sep 17 00:00:00 2001
+From bf4583d689e09d8d0b877d1203c19a3d7cb88521 Mon Sep 17 00:00:00 2001
 From: Stelios Tsampas <loathingkernel@gmail.com>
 Date: Thu, 23 Apr 2026 00:51:34 +0300
-Subject: [PATCH 07/14] Revert "HACK: winedbg: When crash dialog is not shown,
+Subject: [PATCH 06/37] Revert "HACK: winedbg: When crash dialog is not shown,
  dump crash info to stderr"
 
 This reverts commit 12e7d48882a3b61db6432fe393a8972157207e51.
@@ -62,6 +62,3 @@ index 40ceae48937..c7f14e8238f 100644
      while (len > 0)
      {
          unsigned int count = min( len, sizeof(line_buff) - line_pos );
--- 
-2.54.0
-

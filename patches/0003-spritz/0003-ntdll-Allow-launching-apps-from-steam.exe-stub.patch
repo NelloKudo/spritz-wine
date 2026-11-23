@@ -1,7 +1,7 @@
-From 33c0cf3f4726ce8fd62eeed6f22d59ef7affd955 Mon Sep 17 00:00:00 2001
+From 6de8cd32b815be5388c0b6466caafa2f766a318f Mon Sep 17 00:00:00 2001
 From: NelloKudo <marshnelloosu@gmail.com>
 Date: Mon, 25 Aug 2025 23:25:25 +0200
-Subject: [PATCH 3/8] ntdll: Allow launching apps from steam.exe stub.
+Subject: [PATCH 32/37] ntdll: Allow launching apps from steam.exe stub.
 
 Some games need to be launched from Proton's stub steam.exe to allow
 being launched on Linux and related systems: this allows doing so without
@@ -13,10 +13,10 @@ any Proton script, but straight up from Wine.
  3 files changed, 68 insertions(+), 8 deletions(-)
 
 diff --git a/dlls/ntdll/unix/env.c b/dlls/ntdll/unix/env.c
-index e92bdb45373..c58b1dbe365 100644
+index d3a8ef2fba0..945d3b3ed7f 100644
 --- a/dlls/ntdll/unix/env.c
 +++ b/dlls/ntdll/unix/env.c
-@@ -1924,6 +1924,24 @@ static void init_peb( RTL_USER_PROCESS_PARAMETERS *params, void *module )
+@@ -1936,6 +1936,24 @@ static void init_peb( RTL_USER_PROCESS_PARAMETERS *params, void *module )
  }
  
  
@@ -41,7 +41,7 @@ index e92bdb45373..c58b1dbe365 100644
  /*************************************************************************
   *		build_initial_params
   *
-@@ -1940,6 +1958,7 @@ static RTL_USER_PROCESS_PARAMETERS *build_initial_params( void **module )
+@@ -1952,6 +1970,7 @@ static RTL_USER_PROCESS_PARAMETERS *build_initial_params( void **module )
      WCHAR *curdir = get_initial_directory();
      UNICODE_STRING nt_name;
      NTSTATUS status;
@@ -49,7 +49,7 @@ index e92bdb45373..c58b1dbe365 100644
  
      if (NtCurrentTeb64()) NtCurrentTeb64()->TlsSlots[WOW64_TLS_FILESYSREDIR] = TRUE;
  
-@@ -1985,18 +2004,31 @@ static RTL_USER_PROCESS_PARAMETERS *build_initial_params( void **module )
+@@ -1997,18 +2016,31 @@ static RTL_USER_PROCESS_PARAMETERS *build_initial_params( void **module )
          }
      }
  
@@ -90,10 +90,10 @@ index e92bdb45373..c58b1dbe365 100644
  
      main_wargv = build_wargv( get_dos_path( nt_name.Buffer ));
 diff --git a/dlls/ntdll/unix/loader.c b/dlls/ntdll/unix/loader.c
-index 022713df20a..6aba5f7b460 100644
+index 6cf894f3848..fe79fc4686f 100644
 --- a/dlls/ntdll/unix/loader.c
 +++ b/dlls/ntdll/unix/loader.c
-@@ -1922,6 +1922,33 @@ NTSTATUS load_start_exe( UNICODE_STRING *nt_name, void **module )
+@@ -1881,6 +1881,33 @@ NTSTATUS load_start_exe( UNICODE_STRING *nt_name, void **module )
      return status;
  }
  
@@ -128,10 +128,10 @@ index 022713df20a..6aba5f7b460 100644
  {
      const DWORD *functions = (const DWORD *)((BYTE *)module + exports->AddressOfFunctions);
 diff --git a/dlls/ntdll/unix/unix_private.h b/dlls/ntdll/unix/unix_private.h
-index a7abfe1a7d7..fde7deb18a5 100644
+index c270d507940..378bbad9469 100644
 --- a/dlls/ntdll/unix/unix_private.h
 +++ b/dlls/ntdll/unix/unix_private.h
-@@ -236,6 +236,7 @@ extern NTSTATUS load_builtin( const struct pe_image_info *image_info, UNICODE_ST
+@@ -242,6 +242,7 @@ extern NTSTATUS load_unixlib_by_name( const UNICODE_STRING *nt_name, void **hand
  extern BOOL is_builtin_path( const UNICODE_STRING *path, WORD *machine );
  extern NTSTATUS load_main_exe( UNICODE_STRING *nt_name, USHORT load_machine, void **module );
  extern NTSTATUS load_start_exe( UNICODE_STRING *nt_name, void **module );
@@ -139,6 +139,3 @@ index a7abfe1a7d7..fde7deb18a5 100644
  extern ULONG_PTR redirect_arm64ec_rva( void *module, ULONG_PTR rva, const IMAGE_ARM64EC_METADATA *metadata );
  extern void start_server( BOOL debug );
  
--- 
-2.54.0
-

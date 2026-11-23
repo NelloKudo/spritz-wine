@@ -1,0 +1,23 @@
+From 003f66130dbb5d075a81f3ded1e26f7c05ee3c0a Mon Sep 17 00:00:00 2001
+From: NelloKudo <marshnelloosu@gmail.com>
+Date: Mon, 23 Nov 2026 12:47:16 +0100
+Subject: [PATCH 22/37] Revert "wine.inf: Substitute Times New Roman for
+ Palatino Linotype"
+
+This reverts commit 207300002407ee40121f67df9e99a21e31ee2be2.
+---
+ loader/wine.inf.in | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/loader/wine.inf.in b/loader/wine.inf.in
+index c2b57c31795..870525557b5 100644
+--- a/loader/wine.inf.in
++++ b/loader/wine.inf.in
+@@ -554,7 +554,6 @@ HKLM,%FontsNT%,"Arial (TrueType)",,"arial.ttf"
+ HKLM,%FontsNT%,"Arial Bold (TrueType)",,"arialbd.ttf"
+ HKLM,%FontsNT%,"Times New Roman (TrueType)",,"times.ttf"
+ HKLM,%FontsNT%,"Courier New (TrueType)",,"cour.ttf"
+-HKCU,Software\Wine\Fonts\Replacements,"Palatino Linotype",,"Times New Roman"
+ 
+ [MCI]
+ HKLM,%Mci32Str%,"AVIVideo",,"mciavi32.dll"

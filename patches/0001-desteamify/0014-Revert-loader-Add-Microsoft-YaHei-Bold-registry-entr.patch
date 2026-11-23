@@ -1,0 +1,23 @@
+From 38c4c018b006602f926b22c3ad923d4de1e411eb Mon Sep 17 00:00:00 2001
+From: NelloKudo <marshnelloosu@gmail.com>
+Date: Mon, 23 Nov 2026 12:46:58 +0100
+Subject: [PATCH 14/37] Revert "loader: Add Microsoft YaHei Bold registry
+ entry."
+
+This reverts commit c45949faec5b47560228cce3c4b590a4b068f2f4.
+---
+ loader/wine.inf.in | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/loader/wine.inf.in b/loader/wine.inf.in
+index fe3ac255634..4aa033853b1 100644
+--- a/loader/wine.inf.in
++++ b/loader/wine.inf.in
+@@ -562,7 +562,6 @@ HKLM,%FontsNT%,"MS Gothic (TrueType)",,"msgothic.ttc"
+ HKLM,%FontsNT%,"MS PGothic (TrueType)",,"msgothic.ttc"
+ HKLM,%FontsNT%,"MS UI Gothic (TrueType)",,"msgothic.ttc"
+ HKLM,%FontsNT%,"Microsoft YaHei (TrueType)",,"msyh.ttf"
+-HKLM,%FontsNT%,"Microsoft YaHei Bold (TrueType)",,"msyhbd.ttf"
+ HKLM,%FontsNT%,"Nirmala UI (TrueType)",,"nirmala.ttf"
+ HKLM,%FontsNT%,"SimSun (TrueType)",,"simsun.ttc"
+ HKLM,%FontsNT%,"NSimSun (TrueType)",,"simsun.ttc"

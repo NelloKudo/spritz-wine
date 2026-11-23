@@ -1,0 +1,22 @@
+From 5fe74cec94a175737de181405468daa0658730dc Mon Sep 17 00:00:00 2001
+From: NelloKudo <marshnelloosu@gmail.com>
+Date: Mon, 23 Nov 2026 12:46:58 +0100
+Subject: [PATCH 15/37] Revert "wine.inf: Add entry for Lucida Console font."
+
+This reverts commit 99b0f640ae05f4c71a2452017fba859df2d4fcfd.
+---
+ loader/wine.inf.in | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/loader/wine.inf.in b/loader/wine.inf.in
+index 4aa033853b1..d4008ce7b6e 100644
+--- a/loader/wine.inf.in
++++ b/loader/wine.inf.in
+@@ -554,7 +554,6 @@ HKLM,%FontsNT%,"Arial (TrueType)",,"arial.ttf"
+ HKLM,%FontsNT%,"Arial Bold (TrueType)",,"arialbd.ttf"
+ HKLM,%FontsNT%,"Courier New (TrueType)",,"cour.ttf"
+ HKLM,%FontsNT%,"Courier New Bold (TrueType)",,"courbd.ttf"
+-HKLM,%FontsNT%,"Lucida Console",,"lucon.ttf"
+ HKLM,%FontsNT%,"Malgun Gothic (TrueType)",,"malgun.ttf"
+ HKLM,%FontsNT%,"Marlett (TrueType)",,"marlett.ttf"
+ HKLM,%FontsNT%,"Microsoft Sans Serif (TrueType)",,"micross.ttf"

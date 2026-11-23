@@ -1,7 +1,8 @@
-From 8556c2c7dc8873d72d797cf004078d2027ab776e Mon Sep 17 00:00:00 2001
+From 087a3ea085bddc3282eeacbe467a0f0a4d5aae65 Mon Sep 17 00:00:00 2001
 From: NelloKudo <marshnelloosu@gmail.com>
 Date: Tue, 7 Oct 2025 13:06:25 +0200
-Subject: [PATCH] ntdll: Set WINE_ENABLE_STEAM_STUB by default for some games.
+Subject: [PATCH 33/37] ntdll: Set WINE_ENABLE_STEAM_STUB by default for some
+ games.
 
 Fixes crashes at startup for games which check if they've been
 launched from 'steam.exe' in their code.
@@ -10,10 +11,10 @@ launched from 'steam.exe' in their code.
  1 file changed, 6 insertions(+)
 
 diff --git a/dlls/ntdll/unix/loader.c b/dlls/ntdll/unix/loader.c
-index 30fadefc97e..54b4edeefa0 100644
+index fe79fc4686f..de250f3a634 100644
 --- a/dlls/ntdll/unix/loader.c
 +++ b/dlls/ntdll/unix/loader.c
-@@ -2361,6 +2361,12 @@ static void hacks_init(void)
+@@ -2276,6 +2276,12 @@ static void hacks_init(void)
  {
      const char *sgi = getenv( "SteamGameId" );
      const char *env_str;
@@ -26,6 +27,3 @@ index 30fadefc97e..54b4edeefa0 100644
      if ((env_str = getenv("WINE_RAM_REPORTING_BIAS")))
      {
          ram_reporting_bias = atoll(env_str) * 1024 * 1024;
--- 
-2.55.0
-

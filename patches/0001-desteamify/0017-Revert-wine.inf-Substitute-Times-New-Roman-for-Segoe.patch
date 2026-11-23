@@ -1,0 +1,23 @@
+From d78dccb246c5898461b0585c1880ab2ce91d38ef Mon Sep 17 00:00:00 2001
+From: NelloKudo <marshnelloosu@gmail.com>
+Date: Mon, 23 Nov 2026 12:46:58 +0100
+Subject: [PATCH 17/37] Revert "wine.inf: Substitute Times New Roman for Segoe
+ UI Semibold."
+
+This reverts commit 1b7fa82542bf0d506b8cbe1d0df12b9bafd38026.
+---
+ loader/wine.inf.in | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/loader/wine.inf.in b/loader/wine.inf.in
+index d9d4458cb1e..6a673495a6a 100644
+--- a/loader/wine.inf.in
++++ b/loader/wine.inf.in
+@@ -572,7 +572,6 @@ HKLM,%FontsNT%,"Webdings (TrueType)",,"webdings.ttf"
+ HKLM,%FontsNT%,"Wingdings (TrueType)",,"wingdings.ttf"
+ HKCU,Software\Wine\Fonts\Replacements,"Palatino Linotype",,"Times New Roman"
+ HKCU,Software\Wine\Fonts\Replacements,"Verdana",,"Times New Roman"
+-HKCU,Software\Wine\Fonts\Replacements,"Segoe UI Semibold",,"Times New Roman"
+ 
+ [MCI]
+ HKLM,%Mci32Str%,"AVIVideo",,"mciavi32.dll"

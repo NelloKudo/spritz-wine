@@ -1,7 +1,7 @@
-From 1bc02a6285b37c1b6d0702a201c9632858f8c8da Mon Sep 17 00:00:00 2001
+From 6d843033d3ad51d319ff9300946ed4506e78dc54 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Michael=20M=C3=BCller?= <michael@fds-team.de>
 Date: Sat, 20 Dec 2014 23:10:38 +0100
-Subject: [PATCH 5/6] Add licenses for fonts as separate files.
+Subject: [PATCH 28/37] Add licenses for fonts as separate files.
 
 ---
  COPYING.arial |  65 +++++
@@ -940,6 +940,3 @@ index 3909c6e050c..46cc62ff03a 100644
 +    * fonts/msyh.ttf and fonts/msyh.sfd
 +      The WenQuanYi Micro Hei font is licensed under both the APACHE 2
 +      license and GPLv3. See COPYING.msyh for GPLv3.
--- 
-2.54.0
-

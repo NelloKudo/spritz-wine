@@ -1,7 +1,7 @@
-From 55dc70117cb6321b9a5c9bf15a8fa694fcd33030 Mon Sep 17 00:00:00 2001
+From 26eb2b9e66c4a4cdd0b6e485efa57d7f21f9f4d5 Mon Sep 17 00:00:00 2001
 From: Stelios Tsampas <loathingkernel@gmail.com>
 Date: Wed, 22 Apr 2026 21:14:14 +0300
-Subject: [PATCH 05/14] Revert "wine.inf: Add protontts registry entries."
+Subject: [PATCH 04/37] Revert "wine.inf: Add protontts registry entries."
 
 This reverts commit 8db22ff4fa3d2fe8547faef7984483dded6b587c.
 ---
@@ -9,10 +9,10 @@ This reverts commit 8db22ff4fa3d2fe8547faef7984483dded6b587c.
  1 file changed, 41 deletions(-)
 
 diff --git a/loader/wine.inf.in b/loader/wine.inf.in
-index 043d59c1447..4e39507f9d6 100644
+index a87049e073f..8e291e7b67b 100644
 --- a/loader/wine.inf.in
 +++ b/loader/wine.inf.in
-@@ -68,7 +68,6 @@ AddReg=\
+@@ -69,7 +69,6 @@ AddReg=\
      MCI,\
      Misc,\
      NVIDIANGX, \
@@ -20,7 +20,7 @@ index 043d59c1447..4e39507f9d6 100644
      OLE,\
      Printing,\
      ProtonOverrides,\
-@@ -1617,46 +1616,6 @@ HKLM,Software\Wow6432Node\Valve\Steam,"InstallPath",,"%16422%\Steam"
+@@ -1651,46 +1650,6 @@ HKLM,Software\Wow6432Node\Valve\Steam,"InstallPath",,"%16422%\Steam"
  [NVIDIANGX]
  HKLM,Software\NVIDIA Corporation\Global\NGXCore,"FullPath",,"C:\Windows\System32"
  
@@ -67,6 +67,3 @@ index 043d59c1447..4e39507f9d6 100644
  [ProtonOverrides]
  ;;Likely want *80 and *90 too, but those require removing Wine's manifest files.
  HKCU,Software\Wine\DllOverrides,"atl100",0x2,"native,builtin"
--- 
-2.54.0
-

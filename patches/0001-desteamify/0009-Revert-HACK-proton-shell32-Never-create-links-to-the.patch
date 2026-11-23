@@ -1,7 +1,7 @@
-From c7ded9f576b550cfadda1a5878ce393d8cc8dc74 Mon Sep 17 00:00:00 2001
+From c3bd91402088b0f641991ab05257642c818eefb9 Mon Sep 17 00:00:00 2001
 From: Stelios Tsampas <loathingkernel@gmail.com>
 Date: Thu, 23 Apr 2026 00:54:55 +0300
-Subject: [PATCH 11/14] Revert "HACK: proton: shell32: Never create links to
+Subject: [PATCH 09/37] Revert "HACK: proton: shell32: Never create links to
  the user's home dirs."
 
 This reverts commit d6c34d05dd44c1bb4364d1611bbc4b12ea9e7df3.
@@ -10,10 +10,10 @@ This reverts commit d6c34d05dd44c1bb4364d1611bbc4b12ea9e7df3.
  1 file changed, 179 insertions(+)
 
 diff --git a/dlls/shell32/shellpath.c b/dlls/shell32/shellpath.c
-index aab3f91c5cd..f603343652f 100644
+index fe74e3fce73..0ee7829d5cd 100644
 --- a/dlls/shell32/shellpath.c
 +++ b/dlls/shell32/shellpath.c
-@@ -2665,6 +2665,180 @@ end:
+@@ -2674,6 +2674,180 @@ end:
      return hr;
  }
  
@@ -194,7 +194,7 @@ index aab3f91c5cd..f603343652f 100644
  /******************************************************************************
   * SHGetFolderPathW			[SHELL32.@]
   *
-@@ -2853,6 +3027,11 @@ HRESULT WINAPI SHGetFolderPathAndSubDirW(
+@@ -2862,6 +3036,11 @@ HRESULT WINAPI SHGetFolderPathAndSubDirW(
          goto end;
      }
  
@@ -206,6 +206,3 @@ index aab3f91c5cd..f603343652f 100644
      /* create directory/directories */
      ret = SHCreateDirectoryExW(hwndOwner, szBuildPath, NULL);
      if (ret && ret != ERROR_ALREADY_EXISTS)
--- 
-2.54.0
-

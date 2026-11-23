@@ -1,7 +1,7 @@
-From bb2533cdc16b6498f35544da39f77d92709f0d35 Mon Sep 17 00:00:00 2001
+From f0b66a699e634e72663625f369e390efa040d31e Mon Sep 17 00:00:00 2001
 From: Stelios Tsampas <loathingkernel@gmail.com>
 Date: Thu, 23 Apr 2026 00:55:04 +0300
-Subject: [PATCH 12/14] Revert "HACK: proton: advapi32: Use steamuser as Wine
+Subject: [PATCH 10/37] Revert "HACK: proton: advapi32: Use steamuser as Wine
  username."
 
 This reverts commit 59b20e82fd1211314e234b08901fafe10490ff94.
@@ -61,6 +61,3 @@ index 127cec57252..2284e92b263 100644
  }
  
  /******************************************************************************
--- 
-2.54.0
-

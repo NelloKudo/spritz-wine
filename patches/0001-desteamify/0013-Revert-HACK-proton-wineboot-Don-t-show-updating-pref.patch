@@ -1,7 +1,7 @@
-From e75da3256e8c5ca4f737a952e9171ad63be1759f Mon Sep 17 00:00:00 2001
-From: Stelios Tsampas <loathingkernel@gmail.com>
-Date: Thu, 23 Apr 2026 00:54:46 +0300
-Subject: [PATCH 10/14] Revert "HACK: proton: wineboot: Don't show "updating
+From dcc98df758b42d4d344abab022074cf23a976b71 Mon Sep 17 00:00:00 2001
+From: NelloKudo <marshnelloosu@gmail.com>
+Date: Mon, 23 Nov 2026 09:26:54 +0100
+Subject: [PATCH 13/37] Revert "HACK: proton: wineboot: Don't show "updating
  prefix" window."
 
 This reverts commit 6ce9191479de6d2a459a8dc4f7a86ec66f7ea404.
@@ -10,10 +10,10 @@ This reverts commit 6ce9191479de6d2a459a8dc4f7a86ec66f7ea404.
  1 file changed, 60 insertions(+)
 
 diff --git a/programs/wineboot/wineboot.c b/programs/wineboot/wineboot.c
-index 20e24f536d1..6df26c12998 100644
+index 1f3562ff63d..86b7820edf2 100644
 --- a/programs/wineboot/wineboot.c
 +++ b/programs/wineboot/wineboot.c
-@@ -1488,6 +1488,64 @@ static BOOL start_services_process(void)
+@@ -1502,6 +1502,64 @@ static BOOL start_services_process(void)
      return TRUE;
  }
  
@@ -75,10 +75,10 @@ index 20e24f536d1..6df26c12998 100644
 +    return hwnd;
 +}
 +
- static HANDLE start_rundll32( const WCHAR *inf_path, const WCHAR *install, WORD machine )
+ static void start_samss_service(void)
  {
-     WCHAR app[MAX_PATH + ARRAY_SIZE(L"\\rundll32.exe" )];
-@@ -1687,6 +1745,7 @@ static void update_wineprefix( BOOL force )
+     SC_HANDLE scm, service;
+@@ -1722,6 +1780,7 @@ static void update_wineprefix( BOOL force )
  
          if ((process = start_rundll32( inf_path, L"PreInstall", IMAGE_FILE_MACHINE_TARGET_HOST )))
          {
@@ -86,7 +86,7 @@ index 20e24f536d1..6df26c12998 100644
              for (;;)
              {
                  if (process)
-@@ -1707,6 +1766,7 @@ static void update_wineprefix( BOOL force )
+@@ -1742,6 +1801,7 @@ static void update_wineprefix( BOOL force )
                      process = start_rundll32( inf_path, L"Wow64Install", machines[count].Machine );
                  count++;
              }
@@ -94,6 +94,3 @@ index 20e24f536d1..6df26c12998 100644
          }
          install_root_pnp_devices();
          update_user_profile();
--- 
-2.54.0
-

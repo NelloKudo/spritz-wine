@@ -1,0 +1,26 @@
+From 25c5d653c7759727ba15abf867ce74b881b2a976 Mon Sep 17 00:00:00 2001
+From: NelloKudo <marshnelloosu@gmail.com>
+Date: Mon, 23 Nov 2026 12:46:58 +0100
+Subject: [PATCH 20/37] Revert "HACK: loader/wine.inf: Add registry entries for
+ the new fonts."
+
+This reverts commit 2b467cfa3e9903c60e643453dd21580c77c528a4.
+---
+ loader/wine.inf.in | 4 ----
+ 1 file changed, 4 deletions(-)
+
+diff --git a/loader/wine.inf.in b/loader/wine.inf.in
+index ac5bfc2b40a..38226e5a177 100644
+--- a/loader/wine.inf.in
++++ b/loader/wine.inf.in
+@@ -554,10 +554,6 @@ HKLM,%FontsNT%,"Arial (TrueType)",,"arial.ttf"
+ HKLM,%FontsNT%,"Arial Bold (TrueType)",,"arialbd.ttf"
+ HKLM,%FontsNT%,"Times New Roman (TrueType)",,"times.ttf"
+ HKLM,%FontsNT%,"Courier New (TrueType)",,"cour.ttf"
+-HKLM,%FontsNT%,"Malgun Gothic (TrueType)",,"malgun.ttf"
+-HKLM,%FontsNT%,"Microsoft YaHei (TrueType)",,"msyh.ttf"
+-HKLM,%FontsNT%,"MS Gothic (TrueType)",,"msgothic.ttc"
+-HKLM,%FontsNT%,"SimSun (TrueType)",,"simsun.ttc"
+ HKCU,Software\Wine\Fonts\Replacements,"Palatino Linotype",,"Times New Roman"
+ HKCU,Software\Wine\Fonts\Replacements,"Verdana",,"Times New Roman"
+ 

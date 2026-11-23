@@ -1,0 +1,26 @@
+From 1c1cc709d6ed0051f10f9ced03a4ffe5e70d1e5d Mon Sep 17 00:00:00 2001
+From: NelloKudo <marshnelloosu@gmail.com>
+Date: Mon, 23 Nov 2026 12:46:58 +0100
+Subject: [PATCH 19/37] Revert "loader/wine.inf: Add registry entries for
+ Microsoft Sans Serif (micross.ttf) and Nirmala UI (nirmala.ttf)."
+
+This reverts commit 4db2aa3035511e6b3720d5f66b8bf0abe648c29c.
+---
+ loader/wine.inf.in | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/loader/wine.inf.in b/loader/wine.inf.in
+index 9161d6e3cc7..ac5bfc2b40a 100644
+--- a/loader/wine.inf.in
++++ b/loader/wine.inf.in
+@@ -555,10 +555,8 @@ HKLM,%FontsNT%,"Arial Bold (TrueType)",,"arialbd.ttf"
+ HKLM,%FontsNT%,"Times New Roman (TrueType)",,"times.ttf"
+ HKLM,%FontsNT%,"Courier New (TrueType)",,"cour.ttf"
+ HKLM,%FontsNT%,"Malgun Gothic (TrueType)",,"malgun.ttf"
+-HKLM,%FontsNT%,"Microsoft Sans Serif (TrueType)",,"micross.ttf"
+ HKLM,%FontsNT%,"Microsoft YaHei (TrueType)",,"msyh.ttf"
+ HKLM,%FontsNT%,"MS Gothic (TrueType)",,"msgothic.ttc"
+-HKLM,%FontsNT%,"Nirmala UI (TrueType)",,"nirmala.ttf"
+ HKLM,%FontsNT%,"SimSun (TrueType)",,"simsun.ttc"
+ HKCU,Software\Wine\Fonts\Replacements,"Palatino Linotype",,"Times New Roman"
+ HKCU,Software\Wine\Fonts\Replacements,"Verdana",,"Times New Roman"
